@@ -2,7 +2,7 @@
   <div class="default-layout">
     <!-- 布局顶部导航 -->
     <section class="layout-header">
-      <CommonHeader title="慧恩齐家医疗科技" sub-title="HR系统"></CommonHeader>
+      <CommonHeader title="LG" sub-title="放假计划生成器"></CommonHeader>
     </section>
     <!-- 布局内容主体 -->
     <section class="layout-mainer">
