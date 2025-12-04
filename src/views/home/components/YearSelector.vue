@@ -4,8 +4,10 @@
     <section class="selector-wrapper">
       <a-date-picker
         :value="value"
-        picker="year"
         style="width: 100%"
+        placeholder="请选择年份"
+        :allow-clear="true"
+        picker="year"
         @change="onChange"
       />
     </section>
@@ -14,15 +16,14 @@
 
 <script lang="ts" setup>
 import type { Dayjs } from 'dayjs'
-import dayjs from 'dayjs'
+
 withDefaults(defineProps<{ label?: string; value?: Dayjs }>(), {
-  label: 'YearSelector',
-  value: () => dayjs()
+  label: 'YearSelector'
 })
 
 const emit = defineEmits(['change'])
 
-function onChange(value: string | Dayjs) {
+function onChange(value: unknown) {
   emit('change', value)
 }
 </script>
@@ -33,6 +34,7 @@ function onChange(value: string | Dayjs) {
   height: auto;
   display: flex;
   flex-direction: column;
+  margin-bottom: 16px;
 
   .selector-label {
     font-size: 14px;
