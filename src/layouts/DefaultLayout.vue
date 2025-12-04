@@ -2,7 +2,13 @@
   <div class="default-layout">
     <!-- 布局顶部导航 -->
     <section class="layout-header">
-      <CommonHeader title="LG" sub-title="放假计划生成器"></CommonHeader>
+      <CommonHeader
+        :show-logo="true"
+        :logo-src="LogoPNG"
+        :show-title="false"
+        :show-sub-title="true"
+        sub-title="放假计划生成器"
+      ></CommonHeader>
     </section>
     <!-- 布局内容主体 -->
     <section class="layout-mainer">
@@ -13,6 +19,7 @@
 
 <script lang="ts" setup>
 import CommonHeader from '@/components/CommonHeader.vue'
+import LogoPNG from '@/assets/images/logo.png'
 </script>
 
 <style lang="less" scoped>

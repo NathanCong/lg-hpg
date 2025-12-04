@@ -88,6 +88,12 @@
         </template>
       </CommonTable>
     </section>
+    <!-- 测试 CommonCard -->
+    <section class="test-card">
+      <CommonCard title="测试卡片">
+        <div>这里是 CommonCard 的内容</div>
+      </CommonCard>
+    </section>
   </div>
 </template>
 
@@ -99,6 +105,7 @@ import CommonLoading from '@/components/CommonLoading.vue'
 import CommonEmpty from '@/components/CommonEmpty.vue'
 import CommonForm from '@/components/CommonForm.vue'
 import CommonTable from '@/components/CommonTable.vue'
+import CommonCard from '@/components/CommonCard.vue'
 import LogoSVG from './assets/images/logo.svg'
 import { FORM_FIELDS, TABLE_COLUMNS } from './constants/index'
 
@@ -191,6 +198,8 @@ function onSubmit() {
   height: auto;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
+  padding: 16px;
 
   .test-header {
     width: 100%;
@@ -198,7 +207,7 @@ function onSubmit() {
   }
 
   .test-loading {
-    margin-top: 10px;
+    margin-top: 16px;
 
     .loading-inner {
       width: 100%;
@@ -211,7 +220,7 @@ function onSubmit() {
     width: 100%;
     height: 200px;
     background-color: #fff;
-    margin-top: 10px;
+    margin-top: 16px;
   }
 
   .test-form {
@@ -220,7 +229,7 @@ function onSubmit() {
     box-sizing: border-box;
     padding: 20px;
     background-color: #fff;
-    margin-top: 10px;
+    margin-top: 16px;
     display: flex;
     flex-direction: column;
   }
@@ -231,7 +240,7 @@ function onSubmit() {
     padding: 0 20px;
     height: 500px;
     background-color: #fff;
-    margin-top: 10px;
+    margin-top: 16px;
 
     .thead-cell,
     .tbody-cell {
@@ -239,6 +248,12 @@ function onSubmit() {
       align-items: center;
       justify-content: center;
     }
+  }
+
+  .test-card {
+    width: 100%;
+    height: auto;
+    margin-top: 16px;
   }
 }
 </style>
