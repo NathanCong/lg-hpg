@@ -1,14 +1,37 @@
 <template>
-  <div class="common-card">
+  <div class="common-card" :class="{ full: isFullMode }">
     <section class="card-header">{{ title }}</section>
     <section class="card-mainer">
-      <slot></slot>
+      <template v-if="isFullMode">
+        <div class="card-scroll">
+          <slot></slot>
+        </div>
+      </template>
+      <template v-else>
+        <slot></slot>
+      </template>
     </section>
+    <template v-if="showFooter">
+      <section class="card-footer">
+        <slot name="footer"></slot>
+      </section>
+    </template>
   </div>
 </template>
 
 <script lang="ts" setup>
-withDefaults(defineProps<{ title?: string }>(), { title: 'CommonCard' })
+import { computed } from 'vue'
+
+const props = withDefaults(
+  defineProps<{ mode?: string; title?: string; showFooter?: boolean }>(),
+  {
+    mode: 'auto',
+    title: 'CommonCard',
+    showFooter: true
+  }
+)
+
+const isFullMode = computed(() => props.mode === 'full')
 </script>
 
 <style lang="less" scoped>
@@ -16,21 +39,48 @@ withDefaults(defineProps<{ title?: string }>(), { title: 'CommonCard' })
   width: 100%;
   height: auto;
   box-sizing: border-box;
-  padding: 16px;
-  padding-top: 0;
   border-radius: 8px;
   background-color: #fff;
   display: flex;
   flex-direction: column;
 
   .card-header {
+    width: 100%;
+    height: auto;
     font-size: 16px;
     font-weight: bold;
-    padding: 16px 0;
+    box-sizing: border-box;
+    padding: 16px;
   }
 
   .card-mainer {
-    flex: 1;
+    width: 100%;
+    height: auto;
+    box-sizing: border-box;
+  }
+
+  .card-footer {
+    width: 100%;
+    height: auto;
+    padding: 16px;
+  }
+
+  &.full {
+    height: 100%;
+
+    .card-mainer {
+      flex: 1;
+      position: relative;
+
+      .card-scroll {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        overflow-y: auto;
+      }
+    }
   }
 }
 </style>
