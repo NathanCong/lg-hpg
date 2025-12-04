@@ -47,10 +47,10 @@ const isFullMode = computed(() => props.mode === 'full')
   .card-header {
     width: 100%;
     height: auto;
-    font-size: 16px;
-    font-weight: bold;
     box-sizing: border-box;
     padding: 16px;
+    font-size: 16px;
+    font-weight: bold;
   }
 
   .card-mainer {
@@ -62,7 +62,7 @@ const isFullMode = computed(() => props.mode === 'full')
   .card-footer {
     width: 100%;
     height: auto;
-    padding: 16px;
+    box-sizing: border-box;
   }
 
   &.full {
@@ -76,7 +76,7 @@ const isFullMode = computed(() => props.mode === 'full')
         position: absolute;
         top: 0;
         right: 0;
-        bottom: 0;
+        bottom: 16px;
         left: 0;
         overflow-y: auto;
       }

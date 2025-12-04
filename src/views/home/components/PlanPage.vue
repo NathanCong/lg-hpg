@@ -1,5 +1,5 @@
 <template>
-  <div class="plan-page">
+  <div class="plan-page" ref="planPageRef">
     <section class="page-header">
       {{ year }} 年 LG CNS 根据国家规定的节假日放假计划
     </section>
@@ -21,6 +21,12 @@
           申请加班，并获得审批。
         </span>
       </div>
+      <div class="page-plans">
+        <PlanDetail />
+        <PlanDetail />
+        <PlanDetail />
+        <PlanDetail />
+      </div>
     </section>
     <section class="page-footer">
       <img class="page-logo" :src="LogoPNG" />
@@ -29,8 +35,10 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import LogoPNG from '@/assets/images/logo.png'
+import PlanDetail from './PlanDetail.vue'
+import { getElementWidth } from '@/utils/element'
 
 const props = withDefaults(
   defineProps<{
@@ -52,17 +60,35 @@ const colors = computed(() => [
   { color: props.color2, label: '放假（调休、补休、周末连休）' },
   { color: props.color3, label: '上班（补班）' }
 ])
+
+const planPageRef = ref<HTMLElement | null>(null)
+
+function setPageHeight() {
+  if (planPageRef.value) {
+    const width = getElementWidth(planPageRef.value)
+    planPageRef.value.style.height = `${(width * 720) / 960}px`
+  }
+}
+
+onMounted(() => {
+  setPageHeight()
+})
 </script>
 
 <style lang="less" scoped>
 .plan-page {
   width: 100%;
-  height: 100%;
   box-sizing: border-box;
   padding: 0 32px;
   display: flex;
   flex-direction: column;
   border: 1px solid #e8e8e8;
+  /* 每节后分页 */
+  page-break-after: always;
+  /* 避免内部断页 */
+  page-break-inside: avoid;
+  /* 移除额外边距 */
+  margin-bottom: 0;
 
   .page-header {
     width: 100%;
@@ -70,7 +96,7 @@ const colors = computed(() => [
     box-sizing: border-box;
     padding: 16px 0;
     font-size: 28px;
-    line-height: 32px;
+    line-height: 38px;
     font-weight: bold;
     border-bottom: 4px solid gray;
   }
@@ -125,6 +151,15 @@ const colors = computed(() => [
         font-weight: bold;
         color: #000;
       }
+    }
+
+    .page-plans {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
     }
   }
 

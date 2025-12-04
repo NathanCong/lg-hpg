@@ -23,28 +23,31 @@
           <div class="actions-buttons">
             <a-button
               type="primary"
-              class="actions-button"
               @click="onCreate"
               :disabled="onCreateDisabled"
             >
               生成预览
-            </a-button>
-            <a-button
-              type="primary"
-              class="actions-button"
-              @click="onExport"
-              :disabled="true"
-            >
-              确认导出
             </a-button>
           </div>
         </div>
       </CommonCard>
     </section>
     <section class="preview-wrapper">
-      <CommonCard mode="full" title="预览计划" :show-footer="false">
-        <!-- 假期计划预览器 -->
-        <PlanPreviewer :options="previewOptions" :plan="holidayPlan" />
+      <CommonCard mode="full" title="预览计划" :show-footer="true">
+        <div class="preview">
+          <PlanPreviewer :options="previewOptions" :plan="holidayPlan" />
+        </div>
+        <template #footer>
+          <div class="preview-footer">
+            <a-button
+              type="primary"
+              @click="onExport"
+              :disabled="onExportDisabled"
+            >
+              导出PDF
+            </a-button>
+          </div>
+        </template>
       </CommonCard>
     </section>
   </div>
@@ -116,6 +119,10 @@ async function onCreate() {
   }
 }
 
+const onExportDisabled = computed(() => {
+  return true
+})
+
 function onExport() {}
 </script>
 
@@ -143,18 +150,31 @@ function onExport() {}
         padding: 16px 0;
         display: flex;
         flex-direction: column;
-
-        .actions-button {
-          &:first-child {
-            margin-bottom: 16px;
-          }
-        }
       }
     }
   }
 
   .preview-wrapper {
     flex: 1;
+
+    .preview {
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      padding: 0 16px;
+    }
+
+    .preview-footer {
+      width: 100%;
+      height: auto;
+      box-sizing: border-box;
+      padding: 16px;
+      padding-top: 0;
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-end;
+      align-items: center;
+    }
   }
 }
 </style>
