@@ -3,7 +3,25 @@
     <section class="page-header">
       {{ year }} 年 LG CNS 根据国家规定的节假日放假计划
     </section>
-    <section class="page-mainer"></section>
+    <section class="page-mainer">
+      <div class="page-tips">
+        <span class="tip-colors">
+          <template v-for="{ color, label } in colors" :key="color">
+            <span class="color-wrapper">
+              <span
+                class="color-value"
+                :style="{ backgroundColor: color }"
+              ></span>
+              <span class="color-label">{{ label }}</span>
+            </span>
+          </template>
+        </span>
+        <span class="tip-box">
+          提示：因客户及业务实际状况，需要法定假日加班的，请提前在 U-HCI
+          申请加班，并获得审批。
+        </span>
+      </div>
+    </section>
     <section class="page-footer">
       <img class="page-logo" :src="LogoPNG" />
     </section>
@@ -11,9 +29,10 @@
 </template>
 
 <script lang="ts" setup>
+import { computed } from 'vue'
 import LogoPNG from '@/assets/images/logo.png'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     year?: string
     color1?: string
@@ -21,9 +40,18 @@ withDefaults(
     color3?: string
   }>(),
   {
-    year: 'year'
+    year: 'year',
+    color1: '#FF0000',
+    color2: '#00FF00',
+    color3: '#0000FF'
   }
 )
+
+const colors = computed(() => [
+  { color: props.color1, label: '放假（法定节假日）' },
+  { color: props.color2, label: '放假（调休、补休、周末连休）' },
+  { color: props.color3, label: '上班（补班）' }
+])
 </script>
 
 <style lang="less" scoped>
@@ -49,6 +77,55 @@ withDefaults(
 
   .page-mainer {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+
+    .page-tips {
+      width: 100%;
+      height: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 16px;
+
+      .tip-colors {
+        display: flex;
+        flex-direction: column;
+        width: auto;
+        height: 100%;
+
+        .color-wrapper {
+          flex: 1;
+          display: flex;
+          flex-direction: row;
+
+          .color-value {
+            width: 120px;
+            margin-right: 16px;
+          }
+
+          .color-label {
+            font-size: 20px;
+            line-height: 30px;
+            font-weight: normal;
+          }
+        }
+      }
+
+      .tip-box {
+        width: 500px;
+        height: auto;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border: 4px solid #000;
+        padding: 8px;
+        font-size: 20px;
+        line-height: 30px;
+        font-weight: bold;
+        color: #000;
+      }
+    }
   }
 
   .page-footer {

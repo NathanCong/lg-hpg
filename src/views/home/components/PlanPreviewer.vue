@@ -58,7 +58,7 @@ watch(
           contentRef.value.style.height = '100%'
         } else {
           const width = getElementWidth(contentRef.value)
-          contentRef.value.style.height = `${(width * 904) / 1304}px`
+          contentRef.value.style.height = `${(width * 720) / 960}px`
         }
       }
     })
