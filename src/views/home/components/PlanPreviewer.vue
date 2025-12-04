@@ -6,7 +6,9 @@
           <template v-if="isEmpty">
             <CommonEmpty />
           </template>
-          <template v-else></template>
+          <template v-else>
+            <PlanPage />
+          </template>
         </div>
       </div>
     </section>
@@ -32,6 +34,7 @@
 import { computed, ref, watch, nextTick } from 'vue'
 import { LeftOutlined, RightOutlined } from '@ant-design/icons-vue'
 import CommonEmpty from '@/components/CommonEmpty.vue'
+import PlanPage from './PlanPage.vue'
 import { getElementWidth } from '@/utils/element'
 
 const props = withDefaults(
@@ -41,7 +44,8 @@ const props = withDefaults(
 
 const holidayMonth = computed(() => Object.keys(props.plan))
 
-const isEmpty = computed(() => holidayMonth.value.length < 1)
+const isEmpty = computed(() => !Boolean(holidayMonth.value.length < 1))
+console.log('isEmpty', isEmpty.value)
 
 const contentRef = ref<HTMLElement | null>(null)
 
@@ -50,7 +54,7 @@ watch(
   (isEmpty) => {
     nextTick(() => {
       if (contentRef.value) {
-        if (isEmpty) {
+        if (isEmpty.value) {
           contentRef.value.style.height = '100%'
         } else {
           const width = getElementWidth(contentRef.value)
