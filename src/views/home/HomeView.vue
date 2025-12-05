@@ -108,8 +108,8 @@ async function getHolidayPlanFromYear(year: string) {
         holidayPlan[month] = {}
       }
       const { date, wage } = holiday[key]
-      const { type, name } = dateDetail[date]
-      holidayPlan[month][day] = { type, name, wage }
+      const { type, name, week } = dateDetail[date]
+      holidayPlan[month][day] = { type, wage, week, desc: name }
     })
     return holidayPlan
   } catch (error) {
