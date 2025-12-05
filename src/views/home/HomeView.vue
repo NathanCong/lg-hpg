@@ -85,7 +85,7 @@ import PlanPage from './components/PlanPage.vue'
 import { getHolidaysFromYear } from '@/apis'
 import { COLORS } from './constants/index'
 
-const previewOptions = reactive<PreviewOptions>({
+const userOptions = reactive<PreviewOptions>({
   year: '',
   color1: '',
   color2: '',
@@ -93,16 +93,16 @@ const previewOptions = reactive<PreviewOptions>({
 })
 
 function onYearChange(value: Dayjs) {
-  previewOptions.year = dayjs(value).format('YYYY')
+  userOptions.year = value ? dayjs(value).format('YYYY') : ''
 }
 
 function onColorChange(type: number, value: string) {
   const key = `color${type}`
-  previewOptions[key] = value
+  userOptions[key] = value
 }
 
 const onCreateDisabled = computed(() => {
-  const { year, color1, color2, color3 } = previewOptions
+  const { year, color1, color2, color3 } = userOptions
   return !(year && color1 && color2 && color3)
 })
 
@@ -110,6 +110,16 @@ const requestLoading = ref(false)
 
 async function getHolidayPlanFromYear(year: string) {
   requestLoading.value = true
+  const holidayFlag: Record<string, boolean> = {
+    元旦: false,
+    春节: false,
+    除夕: false,
+    清明节: false,
+    劳动节: false,
+    端午节: false,
+    国庆节: false,
+    中秋节: false
+  }
   try {
     const response = await getHolidaysFromYear(year)
     const { holiday, type: dateDetail } = response.data
@@ -122,6 +132,26 @@ async function getHolidayPlanFromYear(year: string) {
       const { date, wage } = holiday[key]
       const { type, name, week } = dateDetail[date]
       holidayPlan[month][day] = { type, wage, week, desc: name }
+      // 数据修正
+      // 法定节假日只需要出现一次
+      if (holidayFlag[name] === true) {
+        holidayPlan[month][day].desc = ''
+      }
+      // 法定节假日第一次出现（当天）
+      if (holidayFlag[name] === false) {
+        holidayPlan[month][day].wage = 3 // 法定节假日当天 3 倍工资
+        holidayFlag[name] = true
+      }
+      // 初一 -> 春节
+      if (name === '初一') {
+        const key = '春节'
+        holidayPlan[month][day].desc = key
+        holidayFlag[key] = true
+      }
+      // 补班 -> 不显示
+      if (type === 3) {
+        holidayPlan[month][day].desc = ''
+      }
     })
     return holidayPlan
   } catch (error) {
@@ -131,14 +161,23 @@ async function getHolidayPlanFromYear(year: string) {
   }
 }
 
+const previewOptions = reactive<PreviewOptions>({
+  year: '',
+  color1: '',
+  color2: '',
+  color3: ''
+})
+
 const holidayYearPlan = ref<HolidayYearPlan>({})
 
 async function onCreate() {
-  const { year } = previewOptions
+  const { year, color1, color2, color3 } = userOptions
+  previewOptions.year = year
+  previewOptions.color1 = color1
+  previewOptions.color2 = color2
+  previewOptions.color3 = color3
   try {
     holidayYearPlan.value = (await getHolidayPlanFromYear(year)) || {}
-    console.log('holidayYearPlan', holidayYearPlan.value)
-    console.log('holidayYearPlan[01]', holidayYearPlan.value['01'])
   } catch (error) {
     console.error(error)
   }
@@ -146,7 +185,7 @@ async function onCreate() {
 
 const holidayMonths = computed(() => Object.keys(holidayYearPlan.value).sort())
 
-const isEmpty = computed(() => Boolean(holidayMonths.value.length < 1))
+const isEmpty = computed(() => holidayMonths.value.length < 1)
 
 const onExportDisabled = computed(() => isEmpty.value)
 

@@ -125,7 +125,7 @@ const tbodyCells = computed<TbodyCell[]>(() => {
       week: week === 0 ? 7 : week,
       className: 'tbody-cell',
       day: String(i),
-      desc: type === 3 ? '补班' : desc,
+      desc,
       bgColor: getTbodyCellColor(type, wage),
       textColor: week === 0 || week === 6 ? 'red' : '#333'
     })
