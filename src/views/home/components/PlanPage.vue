@@ -78,9 +78,10 @@ const planPageRef = ref<HTMLElement | null>(null)
     width: 100%;
     height: auto;
     box-sizing: border-box;
-    padding: 16px 0;
-    font-size: 28px;
-    line-height: 38px;
+    font-size: 26px;
+    line-height: 26px;
+    padding-top: 24px;
+    padding-bottom: 16px;
     font-weight: bold;
     border-bottom: 4px solid gray;
   }
@@ -110,28 +111,31 @@ const planPageRef = ref<HTMLElement | null>(null)
           flex-direction: row;
 
           .color-value {
-            width: 120px;
+            width: 100px;
             margin-right: 16px;
           }
 
           .color-label {
-            font-size: 20px;
-            line-height: 30px;
+            font-size: 16px;
+            line-height: 16px;
             font-weight: normal;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
           }
         }
       }
 
       .tip-box {
-        width: 500px;
+        width: 380px;
         height: auto;
         display: flex;
         justify-content: center;
         align-items: center;
         border: 4px solid #000;
         padding: 8px;
-        font-size: 20px;
-        line-height: 30px;
+        font-size: 16px;
+        line-height: 24px;
         font-weight: bold;
         color: #000;
       }
@@ -158,7 +162,7 @@ const planPageRef = ref<HTMLElement | null>(null)
 
     .page-logo {
       width: auto;
-      height: 30px;
+      height: 24px;
     }
   }
 }
