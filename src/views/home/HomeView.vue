@@ -108,49 +108,84 @@ const onCreateDisabled = computed(() => {
 
 const requestLoading = ref(false)
 
+/**
+ * 获取工资倍数
+ */
+function getWage(date: string, desc: string, type: number) {
+  // 元旦 -	法定日期: 1 月 1 日
+  if (date.includes('01-01')) {
+    return 3
+  }
+  // 春节 - 法定日期: 农历除夕, 正月初一, 正月初二, 正月初三
+  if (['除夕', '初一', '初二', '初三'].includes(desc)) {
+    return 3
+  }
+  // 清明节 - 法定日期: 农历清明当日
+  if (desc.includes('清明')) {
+    return 3
+  }
+  // 劳动节 - 法定日期: 5 月 1 日、5 月 2 日
+  if (date.includes('05-01') || date.includes('05-02')) {
+    return 3
+  }
+  // 端午节 - 法定日期: 农历端午当日
+  if (desc.includes('端午')) {
+    return 3
+  }
+  // 中秋节 - 法定日期: 农历中秋节当日
+  if (desc.includes('中秋')) {
+    return 3
+  }
+  // 国庆节 - 法定日期：10 月 1 日、10 月 2 日、10 月 3 日
+  if (
+    date.includes('10-01') ||
+    date.includes('10-02') ||
+    date.includes('10-03')
+  ) {
+    return 3
+  }
+  // 非法定节假日，但是假期中，2倍薪资
+  if (type === 2) {
+    return 2
+  }
+  // 不是假期，1倍薪资
+  return 1
+}
+
 async function getHolidayPlanFromYear(year: string) {
   requestLoading.value = true
-  const holidayFlag: Record<string, boolean> = {
-    元旦: false,
-    春节: false,
-    除夕: false,
-    清明节: false,
-    劳动节: false,
-    端午节: false,
-    国庆节: false,
-    中秋节: false
-  }
   try {
     const response = await getHolidaysFromYear(year)
     const { holiday, type: dateDetail } = response.data
     const holidayPlan: HolidayYearPlan = {}
+    const holidays: string[] = []
     Object.keys(holiday).forEach((key) => {
       const [month, day] = key.split('-')
       if (!holidayPlan[month]) {
         holidayPlan[month] = {}
       }
-      const { date, wage } = holiday[key]
+      const { date } = holiday[key]
       const { type, name, week } = dateDetail[date]
-      holidayPlan[month][day] = { type, wage, week, desc: name }
-      // 数据修正
-      // 法定节假日只需要出现一次
-      if (holidayFlag[name] === true) {
-        holidayPlan[month][day].desc = ''
+      // 生成 desc
+      let desc = name
+      if (type === 2 && holidays.includes(name)) {
+        // 法定节假日重复出现，不重复显示
+        desc = ''
       }
-      // 法定节假日第一次出现（当天）
-      if (holidayFlag[name] === false) {
-        holidayPlan[month][day].wage = 3 // 法定节假日当天 3 倍工资
-        holidayFlag[name] = true
+      if (type === 2 && !holidays.includes(name)) {
+        // 法定节假日第一次出现（当天），需要显示
+        desc = name
+        holidays.push(name)
       }
-      // 初一 -> 春节
-      if (name === '初一') {
-        const key = '春节'
-        holidayPlan[month][day].desc = key
-        holidayFlag[key] = true
-      }
-      // 补班 -> 不显示
       if (type === 3) {
-        holidayPlan[month][day].desc = ''
+        // 补班信息，统一显示
+        desc = '补班'
+      }
+      holidayPlan[month][day] = {
+        type,
+        week,
+        desc,
+        wage: getWage(date, desc, type)
       }
     })
     return holidayPlan
@@ -176,6 +211,7 @@ async function onCreate() {
   previewOptions.color1 = color1
   previewOptions.color2 = color2
   previewOptions.color3 = color3
+  holidayYearPlan.value = {}
   try {
     holidayYearPlan.value = (await getHolidayPlanFromYear(year)) || {}
   } catch (error) {
