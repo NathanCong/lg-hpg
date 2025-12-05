@@ -23,9 +23,9 @@
       </div>
       <div class="page-plans">
         <PlanDetail />
-        <PlanDetail />
-        <PlanDetail />
-        <PlanDetail />
+        <!-- <PlanDetail /> -->
+        <!-- <PlanDetail /> -->
+        <!-- <PlanDetail /> -->
       </div>
     </section>
     <section class="page-footer">

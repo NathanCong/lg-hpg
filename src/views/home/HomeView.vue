@@ -23,8 +23,8 @@
           <div class="actions-buttons">
             <a-button
               type="primary"
-              @click="onCreate"
               :disabled="onCreateDisabled"
+              @click="onCreate"
             >
               生成预览
             </a-button>
@@ -49,8 +49,8 @@
           <div class="preview-footer">
             <a-button
               type="primary"
-              @click="onExport"
               :disabled="onExportDisabled"
+              @click="onExport"
             >
               导出PDF
             </a-button>
@@ -89,6 +89,11 @@ function onColorChange(type: number, value: string) {
   previewOptions[key] = value
 }
 
+const onCreateDisabled = computed(() => {
+  const { year, color1, color2, color3 } = previewOptions
+  return !(year && color1 && color2 && color3)
+})
+
 const requestLoading = ref(false)
 
 async function getHolidayPlanFromYear(year: string) {
@@ -96,7 +101,7 @@ async function getHolidayPlanFromYear(year: string) {
   try {
     const response = await getHolidaysFromYear(year)
     const { holiday, type: dateDetail } = response.data
-    const holidayPlan: HolidayPlan = {}
+    const holidayPlan: HolidayYearPlan = {}
     Object.keys(holiday).forEach((key) => {
       const [month, day] = key.split('-')
       if (!holidayPlan[month]) {
@@ -114,24 +119,24 @@ async function getHolidayPlanFromYear(year: string) {
   }
 }
 
-const onCreateDisabled = computed(() => {
-  const { year, color1, color2, color3 } = previewOptions
-  return !(year && color1 && color2 && color3)
-})
+const holidayYearPlan = ref<HolidayYearPlan>({})
 
-const holidayPlan = ref<HolidayPlan>({})
 async function onCreate() {
   const { year } = previewOptions
   try {
-    holidayPlan.value = (await getHolidayPlanFromYear(year)) || {}
+    holidayYearPlan.value = (await getHolidayPlanFromYear(year)) || {}
+    console.log('holidayYearPlan', holidayYearPlan.value)
+    console.log('holidayYearPlan[01]', holidayYearPlan.value['01'])
   } catch (error) {
     console.error(error)
   }
 }
 
-const onExportDisabled = computed(() => {
-  return false
-})
+const holidayMonths = computed(() => Object.keys(holidayYearPlan.value))
+
+const isEmpty = computed(() => !Boolean(holidayMonths.value.length < 1))
+
+const onExportDisabled = computed(() => isEmpty.value)
 
 function onExport() {
   const element: HTMLElement | null = document.querySelector('.previewer-pages')
@@ -156,9 +161,6 @@ function onExport() {
     html2pdf().from(element).set(options).save()
   }
 }
-
-const holidayMonth = computed(() => Object.keys(holidayPlan))
-const isEmpty = computed(() => Boolean(holidayMonth.value.length < 1))
 </script>
 
 <style lang="less" scoped>
