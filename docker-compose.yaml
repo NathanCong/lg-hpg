@@ -1,0 +1,9 @@
+services:
+  lg-hpg:
+    build: .
+    image: lg-hpg:latest
+    container_name: lg-hpg
+    restart: unless-stopped
+    ports:
+      - 4000:80
+    command: ['nginx', '-g', 'daemon off;']
