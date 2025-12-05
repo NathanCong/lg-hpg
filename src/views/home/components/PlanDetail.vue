@@ -1,14 +1,27 @@
 <template>
   <div class="plan-detail">
-    <section class="detail-header"></section>
+    <section class="detail-header">
+      <span class="header-month">{{ month }}月</span>
+      <span class="header-desc"></span>
+    </section>
     <section class="detail-table">
       <!-- thead -->
-      <template v-for="theadCell in theadCells" :key="theadCell.label">
+      <template v-for="theadCell in theadCells" :key="theadCell.key">
         <span :class="theadCell.className">{{ theadCell.labelText }}</span>
       </template>
       <!-- tbody -->
       <template v-for="tbodyCell in tbodyCells" :key="tbodyCell.key">
-        <span :class="tbodyCell.className">{{ tbodyCell.labelText }}</span>
+        <span
+          :class="tbodyCell.className"
+          :style="{
+            backgroundColor: tbodyCell.bgColor
+          }"
+        >
+          <span class="cell-day" :style="{ color: tbodyCell.textColor }">
+            {{ tbodyCell.day }}
+          </span>
+          <span class="cell-desc">{{ tbodyCell.desc }}</span>
+        </span>
       </template>
     </section>
   </div>
@@ -23,6 +36,9 @@ const props = withDefaults(
     year?: string
     month?: string
     monthPlan?: HolidayMonthPlan
+    color1?: string
+    color2?: string
+    color3?: string
   }>(),
   {
     year: '2026',
@@ -52,7 +68,10 @@ const props = withDefaults(
         week: 7,
         desc: '元旦后补班'
       }
-    })
+    }),
+    color1: '#F99637',
+    color2: '#F9C277',
+    color3: '#3E75B3'
   }
 )
 
@@ -66,44 +85,70 @@ const theadLabels = reactive<string[]>([
   '星期日'
 ])
 
-const theadCells = computed(() => {
-  return theadLabels.map((label) => {
-    return { className: 'thead-cell', labelText: label }
+const theadCells = computed<TheadCell[]>(() => {
+  return theadLabels.map((label, index) => {
+    return { key: index, className: 'thead-cell', labelText: label }
   })
 })
 
-const tbodyCells = computed(() => {
-  const cells = []
-  const { year, month } = props
+function getTbodyCellColor(type: number, wage: number) {
+  // Type 3 代表补班，使用 color3
+  if (type === 3) {
+    return props.color3
+  }
+  // Type 2 代表假期
+  if (type === 2) {
+    // wage 3 代表3倍薪资，使用 color1
+    if (wage === 3) {
+      return props.color1
+    }
+    // wage 2 代表2倍薪资，使用 color2
+    if (wage === 2) {
+      return props.color2
+    }
+  }
+  return '#fafafa'
+}
+
+const tbodyCells = computed<TbodyCell[]>(() => {
+  const cells: TbodyCell[] = []
+  const { year, month, monthPlan } = props
   const firstDay = dayjs(`${year}-${month}-01`)
   const daysCount = firstDay.daysInMonth()
   // 填充日期
   for (let i = 1; i < daysCount; i += 1) {
     const week = firstDay.date(i).day()
+    const key = String(i).length > 1 ? `${i}` : `0${i}`
+    const { desc, wage, type } = monthPlan[key] || {}
     cells.push({
       key: i,
       week: week === 0 ? 7 : week,
       className: 'tbody-cell',
-      labelText: i
+      day: String(i),
+      desc: type === 3 ? '补班' : desc,
+      bgColor: getTbodyCellColor(type, wage),
+      textColor: week === 0 || week === 6 ? 'red' : '#333'
     })
   }
-  // 填充空白
+  // 填充头部空白
   const fIndex = 0
-  const bFillCount = cells[fIndex].week - 1
+  const fCell = cells[fIndex]
+  const bFillCount = fCell ? fCell.week - 1 : 0
   const bFillCells = new Array(bFillCount).fill(null).map((_, index) => ({
     key: 0 - index,
-    className: 'tbody-cell',
-    labelText: ''
+    week: index + 1,
+    className: 'tbody-cell'
   }))
-  cells.unshift(bFillCells)
+  cells.unshift(...bFillCells)
+  // 填充尾部空白
   const lIndex = cells.length - 1
   const aFillCount = 7 - cells[lIndex].week
   const aFillCells = new Array(aFillCount).fill(null).map((_, index) => ({
     key: lIndex + index + 1,
-    className: 'tbody-cell',
-    labelText: ''
+    week: 7 - aFillCount + index + 1,
+    className: 'tbody-cell'
   }))
-  cells.push(aFillCells)
+  cells.push(...aFillCells)
   return cells
 })
 </script>
@@ -112,9 +157,22 @@ const tbodyCells = computed(() => {
 .plan-detail {
   width: 100%;
   height: 100%;
-  background-color: #e8e8e8;
   display: flex;
   flex-direction: column;
+
+  .detail-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    margin-bottom: 8px;
+
+    .header-month {
+      color: #b9000d;
+      font-size: 16px;
+      font-weight: bold;
+    }
+  }
 
   .detail-table {
     flex: 1;
@@ -122,19 +180,35 @@ const tbodyCells = computed(() => {
     grid-template-columns: repeat(7, 1fr);
     grid-template-rows: repeat(6, 1fr);
     gap: 2px;
+    background-color: #eee;
 
-    .thead-cell {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: #ccc;
-    }
-
+    .thead-cell,
     .tbody-cell {
       display: flex;
       align-items: center;
       justify-content: center;
-      background-color: #ccc;
+    }
+
+    .thead-cell {
+      background-color: #d6dded;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .tbody-cell {
+      background-color: #fafafa;
+      flex-direction: column;
+
+      .cell-day {
+        font-size: 14px;
+        line-height: 14px;
+      }
+
+      .cell-desc {
+        margin-top: 2px;
+        font-size: 12px;
+        line-height: 12px;
+      }
     }
   }
 }

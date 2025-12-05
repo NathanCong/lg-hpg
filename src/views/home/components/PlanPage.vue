@@ -1,5 +1,5 @@
 <template>
-  <div class="plan-page" ref="planPageRef">
+  <div class="plan-page">
     <section class="page-header">
       {{ year }} 年 LG CNS 根据国家规定的节假日放假计划
     </section>
@@ -22,10 +22,16 @@
         </span>
       </div>
       <div class="page-plans">
-        <PlanDetail />
-        <!-- <PlanDetail /> -->
-        <!-- <PlanDetail /> -->
-        <!-- <PlanDetail /> -->
+        <template v-for="month in months" :key="month">
+          <PlanDetail
+            :year="year"
+            :month="month"
+            :month-plan="yearPlan[month]"
+            :color1="color1"
+            :color2="color2"
+            :color3="color3"
+          />
+        </template>
       </div>
     </section>
     <section class="page-footer">
@@ -35,32 +41,35 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import LogoPNG from '@/assets/images/logo.png'
 import PlanDetail from './PlanDetail.vue'
 
 const props = withDefaults(
   defineProps<{
     year?: string
+    yearPlan?: HolidayYearPlan
+    months?: string[]
     color1?: string
     color2?: string
     color3?: string
   }>(),
   {
     year: 'year',
+    months: () => ['1', '2', '3', '4'],
+    yearPlan: () => ({}),
     color1: '#FF0000',
     color2: '#00FF00',
     color3: '#0000FF'
   }
 )
 
+console.log('months', props.months)
 const colors = computed(() => [
   { color: props.color1, label: '放假（法定节假日）' },
   { color: props.color2, label: '放假（调休、补休、周末连休）' },
   { color: props.color3, label: '上班（补班）' }
 ])
-
-const planPageRef = ref<HTMLElement | null>(null)
 </script>
 
 <style lang="less" scoped>
@@ -81,7 +90,7 @@ const planPageRef = ref<HTMLElement | null>(null)
     font-size: 26px;
     line-height: 26px;
     padding-top: 24px;
-    padding-bottom: 16px;
+    padding-bottom: 8px;
     font-weight: bold;
     border-bottom: 4px solid gray;
   }
@@ -116,8 +125,8 @@ const planPageRef = ref<HTMLElement | null>(null)
           }
 
           .color-label {
-            font-size: 16px;
-            line-height: 16px;
+            font-size: 14px;
+            line-height: 14px;
             font-weight: normal;
             display: flex;
             align-items: center;
@@ -162,7 +171,7 @@ const planPageRef = ref<HTMLElement | null>(null)
 
     .page-logo {
       width: auto;
-      height: 24px;
+      height: 16px;
     }
   }
 }

@@ -8,16 +8,19 @@
           <!-- 颜色1选择（法定节假日） -->
           <ColorSelector
             label="颜色1选择（法定节假日）"
+            :colors="COLORS"
             @change="(value) => onColorChange(1, value)"
           />
           <!-- 颜色2选择（调休、补休、周末连休） -->
           <ColorSelector
             label="颜色2选择（调休、补休、周末连休）"
+            :colors="COLORS"
             @change="(value) => onColorChange(2, value)"
           />
           <!-- 颜色3选择（补班） -->
           <ColorSelector
             label="颜色3选择（补班）"
+            :colors="COLORS"
             @change="(value) => onColorChange(3, value)"
           />
           <div class="actions-buttons">
@@ -40,8 +43,16 @@
           </template>
           <template v-else>
             <div class="previewer-pages">
-              <PlanPage />
-              <PlanPage />
+              <template v-for="pages in previewerPages" :key="pages.key">
+                <PlanPage
+                  :year="previewOptions.year"
+                  :year-plan="holidayYearPlan"
+                  :months="pages.months"
+                  :color1="previewOptions.color1"
+                  :color2="previewOptions.color2"
+                  :color3="previewOptions.color3"
+                />
+              </template>
             </div>
           </template>
         </div>
@@ -72,6 +83,7 @@ import ColorSelector from './components/ColorSelector.vue'
 import CommonEmpty from '@/components/CommonEmpty.vue'
 import PlanPage from './components/PlanPage.vue'
 import { getHolidaysFromYear } from '@/apis'
+import { COLORS } from './constants/index'
 
 const previewOptions = reactive<PreviewOptions>({
   year: '',
@@ -132,11 +144,23 @@ async function onCreate() {
   }
 }
 
-const holidayMonths = computed(() => Object.keys(holidayYearPlan.value))
+const holidayMonths = computed(() => Object.keys(holidayYearPlan.value).sort())
 
-const isEmpty = computed(() => !Boolean(holidayMonths.value.length < 1))
+const isEmpty = computed(() => Boolean(holidayMonths.value.length < 1))
 
 const onExportDisabled = computed(() => isEmpty.value)
+
+const previewerPages = computed(() => {
+  const pages = []
+  const months = holidayMonths.value
+  for (let i = 0; i < months.length; i += 4) {
+    pages.push({
+      key: i,
+      months: months.slice(i, i + 4)
+    })
+  }
+  return pages
+})
 
 function onExport() {
   const element: HTMLElement | null = document.querySelector('.previewer-pages')
