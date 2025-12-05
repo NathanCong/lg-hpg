@@ -35,10 +35,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref } from 'vue'
 import LogoPNG from '@/assets/images/logo.png'
 import PlanDetail from './PlanDetail.vue'
-import { getElementWidth } from '@/utils/element'
 
 const props = withDefaults(
   defineProps<{
@@ -62,33 +61,18 @@ const colors = computed(() => [
 ])
 
 const planPageRef = ref<HTMLElement | null>(null)
-
-function setPageHeight() {
-  if (planPageRef.value) {
-    const width = getElementWidth(planPageRef.value)
-    planPageRef.value.style.height = `${(width * 720) / 960}px`
-  }
-}
-
-onMounted(() => {
-  setPageHeight()
-})
 </script>
 
 <style lang="less" scoped>
 .plan-page {
-  width: 100%;
+  width: 960px;
+  height: 720px;
+  background-color: #fff;
+  border: 1px solid #e8e8e8;
   box-sizing: border-box;
   padding: 0 32px;
   display: flex;
   flex-direction: column;
-  border: 1px solid #e8e8e8;
-  /* 每节后分页 */
-  page-break-after: always;
-  /* 避免内部断页 */
-  page-break-inside: avoid;
-  /* 移除额外边距 */
-  margin-bottom: 0;
 
   .page-header {
     width: 100%;

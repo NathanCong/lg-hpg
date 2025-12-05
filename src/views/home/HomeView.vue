@@ -34,8 +34,16 @@
     </section>
     <section class="preview-wrapper">
       <CommonCard mode="full" title="预览计划" :show-footer="true">
-        <div class="preview">
-          <PlanPreviewer :options="previewOptions" :plan="holidayPlan" />
+        <div class="preview" :class="{ empty: isEmpty }">
+          <template v-if="isEmpty">
+            <CommonEmpty />
+          </template>
+          <template v-else>
+            <div class="previewer-pages">
+              <PlanPage />
+              <PlanPage />
+            </div>
+          </template>
         </div>
         <template #footer>
           <div class="preview-footer">
@@ -57,10 +65,12 @@
 import { reactive, ref, computed } from 'vue'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
+import html2pdf from 'html2pdf.js'
 import CommonCard from '@/components/CommonCard.vue'
 import YearSelector from './components/YearSelector.vue'
 import ColorSelector from './components/ColorSelector.vue'
-import PlanPreviewer from './components/PlanPreviewer.vue'
+import CommonEmpty from '@/components/CommonEmpty.vue'
+import PlanPage from './components/PlanPage.vue'
 import { getHolidaysFromYear } from '@/apis'
 
 const previewOptions = reactive<PreviewOptions>({
@@ -120,10 +130,35 @@ async function onCreate() {
 }
 
 const onExportDisabled = computed(() => {
-  return true
+  return false
 })
 
-function onExport() {}
+function onExport() {
+  const element: HTMLElement | null = document.querySelector('.previewer-pages')
+  const options = {
+    margin: 0,
+    filename: `${previewOptions.year}年节假日放假计划.pdf`,
+    image: {
+      type: 'jpeg' as const,
+      quality: 0.98
+    },
+    html2canvas: {
+      scale: 2,
+      useCORS: true
+    },
+    jsPDF: {
+      unit: 'px', // 页面宽高单位
+      format: [960, 720] as [number, number], // 单页宽高：960 * 720
+      orientation: 'landscape' as const // 页面方向：纵向（portrait），横向（landscape）
+    }
+  }
+  if (element) {
+    html2pdf().from(element).set(options).save()
+  }
+}
+
+const holidayMonth = computed(() => Object.keys(holidayPlan))
+const isEmpty = computed(() => Boolean(holidayMonth.value.length < 1))
 </script>
 
 <style lang="less" scoped>
@@ -159,9 +194,16 @@ function onExport() {}
 
     .preview {
       width: 100%;
-      height: 100%;
+      height: auto;
       box-sizing: border-box;
-      padding: 0 16px;
+      padding: 16px 0;
+      background-color: #e8e8e8;
+      display: flex;
+      justify-content: center;
+
+      &.empty {
+        height: 100%;
+      }
     }
 
     .preview-footer {
