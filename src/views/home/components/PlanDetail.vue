@@ -116,7 +116,7 @@ const tbodyCells = computed<TbodyCell[]>(() => {
   const firstDay = dayjs(`${year}-${month}-01`)
   const daysCount = firstDay.daysInMonth()
   // 填充日期
-  for (let i = 1; i < daysCount; i += 1) {
+  for (let i = 1; i <= daysCount; i += 1) {
     const week = firstDay.date(i).day()
     const key = String(i).length > 1 ? `${i}` : `0${i}`
     const { desc, wage, type } = monthPlan[key] || {}
