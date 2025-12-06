@@ -7,25 +7,10 @@
     </section>
     <section class="preview-wrapper">
       <CommonCard mode="full" title="预览计划" :show-footer="true">
-        <div class="preview" :class="{ empty: isEmpty }">
-          <template v-if="isEmpty">
-            <CommonEmpty />
-          </template>
-          <template v-else>
-            <div class="previewer-pages">
-              <template v-for="pages in previewerPages" :key="pages.key">
-                <PlanPage
-                  :year="previewOptions.year"
-                  :year-plan="holidayYearPlan"
-                  :months="pages.months"
-                  :color1="previewOptions.color1"
-                  :color2="previewOptions.color2"
-                  :color3="previewOptions.color3"
-                />
-              </template>
-            </div>
-          </template>
-        </div>
+        <PlanPreviewer
+          :user-options="userOptions"
+          :holiday-year-plan="holidayYearPlan"
+        />
         <template #footer>
           <div class="preview-footer">
             <a-button
@@ -45,9 +30,8 @@
 <script lang="ts" setup>
 import { reactive, ref, computed } from 'vue'
 import html2pdf from 'html2pdf.js'
-import { CommonCard, CommonEmpty } from '@/components/index'
-import { OptionsSelector } from './components/index'
-import PlanPage from './components/PlanPage.vue'
+import { CommonCard } from '@/components/index'
+import { OptionsSelector, PlanPreviewer } from './components/index'
 import { getHolidaysFromYear } from '@/apis'
 
 const requestLoading = ref(false)
@@ -127,8 +111,9 @@ async function getHolidayPlanFromYear(year: string) {
       }
       holidayPlan[month][day] = {
         type,
-        week,
+        name,
         desc,
+        week,
         wage: getWage(date, desc, type)
       }
     })
@@ -140,7 +125,7 @@ async function getHolidayPlanFromYear(year: string) {
   }
 }
 
-const previewOptions = reactive<PreviewOptions>({
+const userOptions = reactive<UserOptions>({
   year: '',
   color1: '',
   color2: '',
@@ -151,10 +136,10 @@ const holidayYearPlan = ref<HolidayYearPlan>({})
 
 async function onCreate(userOptions: UserOptions) {
   const { year, color1, color2, color3 } = userOptions
-  previewOptions.year = year
-  previewOptions.color1 = color1
-  previewOptions.color2 = color2
-  previewOptions.color3 = color3
+  userOptions.year = year
+  userOptions.color1 = color1
+  userOptions.color2 = color2
+  userOptions.color3 = color3
   holidayYearPlan.value = {}
   try {
     holidayYearPlan.value = (await getHolidayPlanFromYear(year)) || {}
@@ -163,29 +148,15 @@ async function onCreate(userOptions: UserOptions) {
   }
 }
 
-const holidayMonths = computed(() => Object.keys(holidayYearPlan.value).sort())
-
-const isEmpty = computed(() => holidayMonths.value.length < 1)
+const isEmpty = computed(() => Object.keys(holidayYearPlan.value).length < 1)
 
 const onExportDisabled = computed(() => isEmpty.value)
-
-const previewerPages = computed(() => {
-  const pages = []
-  const months = holidayMonths.value
-  for (let i = 0; i < months.length; i += 4) {
-    pages.push({
-      key: i,
-      months: months.slice(i, i + 4)
-    })
-  }
-  return pages
-})
 
 function onExport() {
   const element: HTMLElement | null = document.querySelector('.previewer-pages')
   const options = {
     margin: 0,
-    filename: `${previewOptions.year}年节假日放假计划.pdf`,
+    filename: `${userOptions.year}年节假日放假计划.pdf`,
     image: {
       type: 'jpeg' as const,
       quality: 0.98
@@ -224,20 +195,6 @@ function onExport() {
 
   .preview-wrapper {
     flex: 1;
-
-    .preview {
-      width: 100%;
-      height: auto;
-      box-sizing: border-box;
-      padding: 16px 0;
-      background-color: #e8e8e8;
-      display: flex;
-      justify-content: center;
-
-      &.empty {
-        height: 100%;
-      }
-    }
 
     .preview-footer {
       width: 100%;
