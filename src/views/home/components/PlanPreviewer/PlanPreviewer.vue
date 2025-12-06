@@ -82,7 +82,6 @@ const previewerPagesRef = ref<InstanceType<typeof PlanPage>[] | null>(null)
 function exportPNG() {
   if (previewerPagesRef.value) {
     previewerPagesRef.value.forEach((page) => {
-      console.log('page', page.$el)
       html2canvas(page.$el, {
         useCORS: true, // 允许跨域图片（关键！否则跨域图片会空白）
         scale: 2 // 放大2倍，提升导出图片清晰度
