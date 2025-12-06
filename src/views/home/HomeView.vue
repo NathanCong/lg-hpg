@@ -266,6 +266,7 @@ function onExport() {
 .home {
   width: 100%;
   height: 100%;
+  background-color: #ddd;
   box-sizing: border-box;
   padding: 16px;
   display: flex;
