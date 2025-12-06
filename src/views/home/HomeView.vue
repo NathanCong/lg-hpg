@@ -1,69 +1,36 @@
 <template>
   <div class="home">
-    <section class="actions-wrapper">
+    <section class="options-wrapper">
       <CommonCard title="配置选项" :show-footer="false">
-        <div class="actions">
-          <!-- 年份选择 -->
-          <YearSelector label="年份选择" @change="onYearChange" />
-          <!-- 颜色1选择（法定节假日） -->
-          <ColorSelector
-            label="颜色1选择（法定节假日）"
-            :colors="COLORS"
-            @change="(value) => onColorChange(1, value)"
-          />
-          <!-- 颜色2选择（调休、补休、周末连休） -->
-          <ColorSelector
-            label="颜色2选择（调休、补休、周末连休）"
-            :colors="COLORS"
-            @change="(value) => onColorChange(2, value)"
-          />
-          <!-- 颜色3选择（补班） -->
-          <ColorSelector
-            label="颜色3选择（补班）"
-            :colors="COLORS"
-            @change="(value) => onColorChange(3, value)"
-          />
-          <div class="actions-buttons">
-            <a-button
-              type="primary"
-              :disabled="onCreateDisabled"
-              @click="onCreate"
-            >
-              生成预览
-            </a-button>
-          </div>
-        </div>
+        <OptionsSelector @create="onCreate" />
       </CommonCard>
     </section>
     <section class="preview-wrapper">
       <CommonCard mode="full" title="预览计划" :show-footer="true">
-        <div class="preview" :class="{ empty: isEmpty }">
-          <template v-if="isEmpty">
-            <CommonEmpty />
-          </template>
-          <template v-else>
-            <div class="previewer-pages">
-              <template v-for="pages in previewerPages" :key="pages.key">
-                <PlanPage
-                  :year="previewOptions.year"
-                  :year-plan="holidayYearPlan"
-                  :months="pages.months"
-                  :color1="previewOptions.color1"
-                  :color2="previewOptions.color2"
-                  :color3="previewOptions.color3"
-                />
-              </template>
-            </div>
-          </template>
-        </div>
+        <CommonLoading :is-loading="requestLoading">
+          <PlanPreviewer
+            :user-options="userOptions"
+            :holiday-year-plan="holidayYearPlan"
+            ref="planPreviewerRef"
+          />
+        </CommonLoading>
         <template #footer>
           <div class="preview-footer">
             <a-button
               type="primary"
-              :disabled="onExportDisabled"
-              @click="onExport"
+              style="margin-left: 8px"
+              :disabled="isExportDisabled"
+              @click="onExportPNG"
             >
-              导出PDF
+              导出 PNG
+            </a-button>
+            <a-button
+              type="primary"
+              style="margin-left: 8px"
+              :disabled="isExportDisabled"
+              @click="onExportPDF"
+            >
+              导出 PDF
             </a-button>
           </div>
         </template>
@@ -74,83 +41,12 @@
 
 <script lang="ts" setup>
 import { reactive, ref, computed } from 'vue'
-import type { Dayjs } from 'dayjs'
-import dayjs from 'dayjs'
-import html2pdf from 'html2pdf.js'
-import CommonCard from '@/components/CommonCard.vue'
-import YearSelector from './components/YearSelector.vue'
-import ColorSelector from './components/ColorSelector.vue'
-import CommonEmpty from '@/components/CommonEmpty.vue'
-import PlanPage from './components/PlanPage.vue'
+import { CommonCard, CommonLoading } from '@/components/index'
+import { OptionsSelector, PlanPreviewer } from './components/index'
 import { getHolidaysFromYear } from '@/apis'
-import { COLORS } from './constants/index'
-
-const userOptions = reactive<PreviewOptions>({
-  year: '',
-  color1: '',
-  color2: '',
-  color3: ''
-})
-
-function onYearChange(value: Dayjs) {
-  userOptions.year = value ? dayjs(value).format('YYYY') : ''
-}
-
-function onColorChange(type: number, value: string) {
-  const key = `color${type}`
-  userOptions[key] = value
-}
-
-const onCreateDisabled = computed(() => {
-  const { year, color1, color2, color3 } = userOptions
-  return !(year && color1 && color2 && color3)
-})
+import { isLegalHoliday, getWageMultiple } from '@/utils/common'
 
 const requestLoading = ref(false)
-
-/**
- * 获取工资倍数
- */
-function getWage(date: string, desc: string, type: number) {
-  // 元旦 -	法定日期: 1 月 1 日
-  if (date.includes('01-01')) {
-    return 3
-  }
-  // 春节 - 法定日期: 农历除夕, 正月初一, 正月初二, 正月初三
-  if (['除夕', '初一', '初二', '初三'].includes(desc)) {
-    return 3
-  }
-  // 清明节 - 法定日期: 农历清明当日
-  if (desc.includes('清明')) {
-    return 3
-  }
-  // 劳动节 - 法定日期: 5 月 1 日、5 月 2 日
-  if (date.includes('05-01') || date.includes('05-02')) {
-    return 3
-  }
-  // 端午节 - 法定日期: 农历端午当日
-  if (desc.includes('端午')) {
-    return 3
-  }
-  // 中秋节 - 法定日期: 农历中秋节当日
-  if (desc.includes('中秋')) {
-    return 3
-  }
-  // 国庆节 - 法定日期：10 月 1 日、10 月 2 日、10 月 3 日
-  if (
-    date.includes('10-01') ||
-    date.includes('10-02') ||
-    date.includes('10-03')
-  ) {
-    return 3
-  }
-  // 非法定节假日，但是假期中，2倍薪资
-  if (type === 2) {
-    return 2
-  }
-  // 不是假期，1倍薪资
-  return 1
-}
 
 async function getHolidayPlanFromYear(year: string) {
   requestLoading.value = true
@@ -164,29 +60,20 @@ async function getHolidayPlanFromYear(year: string) {
       if (!holidayPlan[month]) {
         holidayPlan[month] = {}
       }
-      const { date } = holiday[key]
+      const { date, wage } = holiday[key]
       const { type, name, week } = dateDetail[date]
-      // 生成 desc
-      let desc = name
-      if (type === 2 && holidays.includes(name)) {
-        // 法定节假日重复出现，不重复显示
-        desc = ''
+      // 初始化
+      holidayPlan[month][day] = { date, type, name, desc: name, week, wage }
+      // 设置 name
+      let newName = ''
+      if (isLegalHoliday(type, name, date) && !holidays.includes(name)) {
+        // 法定节假日，不重复显示
+        newName = name
+        holidays.push(newName)
       }
-      if (type === 2 && !holidays.includes(name)) {
-        // 法定节假日第一次出现（当天），需要显示
-        desc = name
-        holidays.push(name)
-      }
-      if (type === 3) {
-        // 补班信息，统一显示
-        desc = '补班'
-      }
-      holidayPlan[month][day] = {
-        type,
-        week,
-        desc,
-        wage: getWage(date, desc, type)
-      }
+      holidayPlan[month][day].name = newName
+      // 设置 wage
+      holidayPlan[month][day].wage = getWageMultiple(type, newName, date)
     })
     return holidayPlan
   } catch (error) {
@@ -196,7 +83,7 @@ async function getHolidayPlanFromYear(year: string) {
   }
 }
 
-const previewOptions = reactive<PreviewOptions>({
+const userOptions = reactive<UserOptions>({
   year: '',
   color1: '',
   color2: '',
@@ -205,60 +92,32 @@ const previewOptions = reactive<PreviewOptions>({
 
 const holidayYearPlan = ref<HolidayYearPlan>({})
 
-async function onCreate() {
-  const { year, color1, color2, color3 } = userOptions
-  previewOptions.year = year
-  previewOptions.color1 = color1
-  previewOptions.color2 = color2
-  previewOptions.color3 = color3
-  holidayYearPlan.value = {}
+async function onCreate({ year, color1, color2, color3 }: UserOptions) {
   try {
+    // 请求新数据之前必须先清空，否则样式会错乱
+    holidayYearPlan.value = {}
     holidayYearPlan.value = (await getHolidayPlanFromYear(year)) || {}
+    userOptions.year = year
+    userOptions.color1 = color1
+    userOptions.color2 = color2
+    userOptions.color3 = color3
   } catch (error) {
     console.error(error)
   }
 }
 
-const holidayMonths = computed(() => Object.keys(holidayYearPlan.value).sort())
+const isEmpty = computed(() => Object.keys(holidayYearPlan.value).length < 1)
 
-const isEmpty = computed(() => holidayMonths.value.length < 1)
+const isExportDisabled = computed(() => requestLoading.value || isEmpty.value)
 
-const onExportDisabled = computed(() => isEmpty.value)
+const planPreviewerRef = ref<InstanceType<typeof PlanPreviewer> | null>(null)
 
-const previewerPages = computed(() => {
-  const pages = []
-  const months = holidayMonths.value
-  for (let i = 0; i < months.length; i += 4) {
-    pages.push({
-      key: i,
-      months: months.slice(i, i + 4)
-    })
-  }
-  return pages
-})
+function onExportPNG() {
+  planPreviewerRef.value?.exportPNG()
+}
 
-function onExport() {
-  const element: HTMLElement | null = document.querySelector('.previewer-pages')
-  const options = {
-    margin: 0,
-    filename: `${previewOptions.year}年节假日放假计划.pdf`,
-    image: {
-      type: 'jpeg' as const,
-      quality: 0.98
-    },
-    html2canvas: {
-      scale: 2,
-      useCORS: true
-    },
-    jsPDF: {
-      unit: 'px', // 页面宽高单位
-      format: [960, 720] as [number, number], // 单页宽高：960 * 720
-      orientation: 'landscape' as const // 页面方向：纵向（portrait），横向（landscape）
-    }
-  }
-  if (element) {
-    html2pdf().from(element).set(options).save()
-  }
+function onExportPDF() {
+  planPreviewerRef.value?.exportPDF()
 }
 </script>
 
@@ -266,46 +125,20 @@ function onExport() {
 .home {
   width: 100%;
   height: 100%;
+  background-color: #ddd;
   box-sizing: border-box;
   padding: 16px;
   display: flex;
   flex-direction: row;
 
-  .actions-wrapper {
+  .options-wrapper {
     width: 300px;
     height: 100%;
     margin-right: 16px;
-
-    .actions {
-      padding: 0 16px;
-
-      .actions-buttons {
-        width: 100%;
-        height: auto;
-        box-sizing: border-box;
-        padding: 16px 0;
-        display: flex;
-        flex-direction: column;
-      }
-    }
   }
 
   .preview-wrapper {
     flex: 1;
-
-    .preview {
-      width: 100%;
-      height: auto;
-      box-sizing: border-box;
-      padding: 16px 0;
-      background-color: #e8e8e8;
-      display: flex;
-      justify-content: center;
-
-      &.empty {
-        height: 100%;
-      }
-    }
 
     .preview-footer {
       width: 100%;

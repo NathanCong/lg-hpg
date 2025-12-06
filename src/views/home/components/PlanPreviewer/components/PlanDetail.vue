@@ -7,18 +7,16 @@
     <section class="detail-table">
       <!-- thead -->
       <template v-for="theadCell in theadCells" :key="theadCell.key">
-        <span :class="theadCell.className">{{ theadCell.labelText }}</span>
+        <span :class="theadCell.className">{{ theadCell.text }}</span>
       </template>
       <!-- tbody -->
       <template v-for="tbodyCell in tbodyCells" :key="tbodyCell.key">
         <span
           :class="tbodyCell.className"
-          :style="{
-            backgroundColor: tbodyCell.bgColor
-          }"
+          :style="{ backgroundColor: tbodyCell.bgColor }"
         >
-          <span class="cell-day" :style="{ color: tbodyCell.textColor }">
-            {{ tbodyCell.day }}
+          <span class="cell-text" :style="{ color: tbodyCell.textColor }">
+            {{ tbodyCell.text }}
           </span>
           <span class="cell-desc">{{ tbodyCell.desc }}</span>
         </span>
@@ -41,37 +39,12 @@ const props = withDefaults(
     color3?: string
   }>(),
   {
-    year: '2026',
-    month: '01',
-    monthPlan: () => ({
-      '01': {
-        type: 2,
-        wage: 3,
-        week: 4,
-        desc: '元旦'
-      },
-      '02': {
-        type: 2,
-        wage: 2,
-        week: 5,
-        desc: '元旦'
-      },
-      '03': {
-        type: 2,
-        wage: 2,
-        week: 6,
-        desc: '元旦'
-      },
-      '04': {
-        type: 3,
-        wage: 1,
-        week: 7,
-        desc: '元旦后补班'
-      }
-    }),
-    color1: '#F99637',
-    color2: '#F9C277',
-    color3: '#3E75B3'
+    year: '',
+    month: '',
+    monthPlan: () => ({}),
+    color1: '',
+    color2: '',
+    color3: ''
   }
 )
 
@@ -86,12 +59,12 @@ const theadLabels = reactive<string[]>([
 ])
 
 const theadCells = computed<TheadCell[]>(() => {
-  return theadLabels.map((label, index) => {
-    return { key: index, className: 'thead-cell', labelText: label }
+  return theadLabels.map((text, index) => {
+    return { key: index, text, className: 'thead-cell' }
   })
 })
 
-function getTbodyCellColor(type: number, wage: number) {
+function getTbodyCellBgColor(type: number, wage: number) {
   // Type 3 代表补班，使用 color3
   if (type === 3) {
     return props.color3
@@ -119,14 +92,14 @@ const tbodyCells = computed<TbodyCell[]>(() => {
   for (let i = 1; i <= daysCount; i += 1) {
     const week = firstDay.date(i).day()
     const key = String(i).length > 1 ? `${i}` : `0${i}`
-    const { desc, wage, type } = monthPlan[key] || {}
+    const { type, name, wage } = monthPlan[key] || {}
     cells.push({
       key: i,
-      week: week === 0 ? 7 : week,
+      text: String(i),
       className: 'tbody-cell',
-      day: String(i),
-      desc,
-      bgColor: getTbodyCellColor(type, wage),
+      week: week === 0 ? 7 : week,
+      desc: name,
+      bgColor: getTbodyCellBgColor(type, wage),
       textColor: week === 0 || week === 6 ? 'red' : '#333'
     })
   }
@@ -136,8 +109,9 @@ const tbodyCells = computed<TbodyCell[]>(() => {
   const bFillCount = fCell ? fCell.week - 1 : 0
   const bFillCells = new Array(bFillCount).fill(null).map((_, index) => ({
     key: 0 - index,
-    week: index + 1,
-    className: 'tbody-cell'
+    text: '',
+    className: 'tbody-cell',
+    week: index + 1
   }))
   cells.unshift(...bFillCells)
   // 填充尾部空白
@@ -145,8 +119,9 @@ const tbodyCells = computed<TbodyCell[]>(() => {
   const aFillCount = 7 - cells[lIndex].week
   const aFillCells = new Array(aFillCount).fill(null).map((_, index) => ({
     key: lIndex + index + 1,
-    week: 7 - aFillCount + index + 1,
-    className: 'tbody-cell'
+    text: '',
+    className: 'tbody-cell',
+    week: 7 - aFillCount + index + 1
   }))
   cells.push(...aFillCells)
   return cells
@@ -178,9 +153,10 @@ const tbodyCells = computed<TbodyCell[]>(() => {
     flex: 1;
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    grid-template-rows: repeat(6, 1fr);
+    grid-template-rows: auto;
+    grid-auto-rows: minmax(31px, auto);
     gap: 2px;
-    background-color: #eee;
+    background-color: #ddd;
 
     .thead-cell,
     .tbody-cell {
@@ -196,10 +172,9 @@ const tbodyCells = computed<TbodyCell[]>(() => {
     }
 
     .tbody-cell {
-      background-color: #fafafa;
       flex-direction: column;
 
-      .cell-day {
+      .cell-text {
         font-size: 14px;
         line-height: 14px;
       }

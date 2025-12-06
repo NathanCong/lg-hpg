@@ -55,16 +55,15 @@ const props = withDefaults(
     color3?: string
   }>(),
   {
-    year: 'year',
-    months: () => ['1', '2', '3', '4'],
+    year: '',
+    months: () => [],
     yearPlan: () => ({}),
-    color1: '#FF0000',
-    color2: '#00FF00',
-    color3: '#0000FF'
+    color1: '',
+    color2: '',
+    color3: ''
   }
 )
 
-console.log('months', props.months)
 const colors = computed(() => [
   { color: props.color1, label: '放假（法定节假日）' },
   { color: props.color2, label: '放假（调休、补休、周末连休）' },
