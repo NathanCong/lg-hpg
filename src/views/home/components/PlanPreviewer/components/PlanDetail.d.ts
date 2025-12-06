@@ -1,14 +1,13 @@
-interface TheadCell {
+interface TableCell {
   key: number
+  text: string
   className: string
-  labelText: string
 }
 
-interface TbodyCell {
-  key: number
+type TheadCell = TableCell
+
+interface TbodyCell extends TableCell {
   week: number
-  className: string
-  day?: string
   desc?: string
   bgColor?: string
   textColor?: string

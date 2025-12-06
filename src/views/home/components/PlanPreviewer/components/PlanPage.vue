@@ -64,7 +64,6 @@ const props = withDefaults(
   }
 )
 
-console.log('months', props.months)
 const colors = computed(() => [
   { color: props.color1, label: '放假（法定节假日）' },
   { color: props.color2, label: '放假（调休、补休、周末连休）' },

@@ -88,13 +88,12 @@ const holidayYearPlan = ref<HolidayYearPlan>({})
 
 async function onCreate(userOptions: UserOptions) {
   const { year, color1, color2, color3 } = userOptions
-  userOptions.year = year
-  userOptions.color1 = color1
-  userOptions.color2 = color2
-  userOptions.color3 = color3
-  holidayYearPlan.value = {}
   try {
     holidayYearPlan.value = (await getHolidayPlanFromYear(year)) || {}
+    userOptions.year = year
+    userOptions.color1 = color1
+    userOptions.color2 = color2
+    userOptions.color3 = color3
   } catch (error) {
     console.error(error)
   }
