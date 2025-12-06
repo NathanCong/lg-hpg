@@ -7,16 +7,19 @@
     </section>
     <section class="preview-wrapper">
       <CommonCard mode="full" title="预览计划" :show-footer="true">
-        <PlanPreviewer
-          :user-options="userOptions"
-          :holiday-year-plan="holidayYearPlan"
-        />
+        <CommonLoading :is-loading="requestLoading">
+          <PlanPreviewer
+            :user-options="userOptions"
+            :holiday-year-plan="holidayYearPlan"
+            ref="planPreviewerRef"
+          />
+        </CommonLoading>
         <template #footer>
           <div class="preview-footer">
             <a-button
               type="primary"
-              :disabled="onExportDisabled"
-              @click="onExport"
+              :disabled="isExportDisabled"
+              @click="onExportPDF"
             >
               导出PDF
             </a-button>
@@ -29,56 +32,12 @@
 
 <script lang="ts" setup>
 import { reactive, ref, computed } from 'vue'
-import html2pdf from 'html2pdf.js'
-import { CommonCard } from '@/components/index'
+import { CommonCard, CommonLoading } from '@/components/index'
 import { OptionsSelector, PlanPreviewer } from './components/index'
 import { getHolidaysFromYear } from '@/apis'
+import { isLegalHoliday, getWageMultiple } from '@/utils/common'
 
 const requestLoading = ref(false)
-
-/**
- * 获取工资倍数
- */
-function getWage(date: string, desc: string, type: number) {
-  // 元旦 -	法定日期: 1 月 1 日
-  if (date.includes('01-01')) {
-    return 3
-  }
-  // 春节 - 法定日期: 农历除夕, 正月初一, 正月初二, 正月初三
-  if (['除夕', '初一', '初二', '初三'].includes(desc)) {
-    return 3
-  }
-  // 清明节 - 法定日期: 农历清明当日
-  if (desc.includes('清明')) {
-    return 3
-  }
-  // 劳动节 - 法定日期: 5 月 1 日、5 月 2 日
-  if (date.includes('05-01') || date.includes('05-02')) {
-    return 3
-  }
-  // 端午节 - 法定日期: 农历端午当日
-  if (desc.includes('端午')) {
-    return 3
-  }
-  // 中秋节 - 法定日期: 农历中秋节当日
-  if (desc.includes('中秋')) {
-    return 3
-  }
-  // 国庆节 - 法定日期：10 月 1 日、10 月 2 日、10 月 3 日
-  if (
-    date.includes('10-01') ||
-    date.includes('10-02') ||
-    date.includes('10-03')
-  ) {
-    return 3
-  }
-  // 非法定节假日，但是假期中，2倍薪资
-  if (type === 2) {
-    return 2
-  }
-  // 不是假期，1倍薪资
-  return 1
-}
 
 async function getHolidayPlanFromYear(year: string) {
   requestLoading.value = true
@@ -94,28 +53,21 @@ async function getHolidayPlanFromYear(year: string) {
       }
       const { date } = holiday[key]
       const { type, name, week } = dateDetail[date]
-      // 生成 desc
-      let desc = name
-      if (type === 2 && holidays.includes(name)) {
-        // 法定节假日重复出现，不重复显示
-        desc = ''
+      // 设置 date、type、desc、week
+      holidayPlan[month][day].date = date
+      holidayPlan[month][day].type = type
+      holidayPlan[month][day].desc = name
+      holidayPlan[month][day].week = week
+      // 设置 name
+      let newName = ''
+      if (isLegalHoliday(name, date) && !holidays.includes(name)) {
+        // 法定节假日，不重复显示
+        newName = name
+        holidays.push(newName)
       }
-      if (type === 2 && !holidays.includes(name)) {
-        // 法定节假日第一次出现（当天），需要显示
-        desc = name
-        holidays.push(name)
-      }
-      if (type === 3) {
-        // 补班信息，统一显示
-        desc = '补班'
-      }
-      holidayPlan[month][day] = {
-        type,
-        name,
-        desc,
-        week,
-        wage: getWage(date, desc, type)
-      }
+      holidayPlan[month][day].name = newName
+      // 设置 wage
+      holidayPlan[month][day].wage = getWageMultiple(type, newName, date)
     })
     return holidayPlan
   } catch (error) {
@@ -150,30 +102,12 @@ async function onCreate(userOptions: UserOptions) {
 
 const isEmpty = computed(() => Object.keys(holidayYearPlan.value).length < 1)
 
-const onExportDisabled = computed(() => isEmpty.value)
+const isExportDisabled = computed(() => requestLoading.value || isEmpty.value)
 
-function onExport() {
-  const element: HTMLElement | null = document.querySelector('.previewer-pages')
-  const options = {
-    margin: 0,
-    filename: `${userOptions.year}年节假日放假计划.pdf`,
-    image: {
-      type: 'jpeg' as const,
-      quality: 0.98
-    },
-    html2canvas: {
-      scale: 2,
-      useCORS: true
-    },
-    jsPDF: {
-      unit: 'px', // 页面宽高单位
-      format: [960, 720] as [number, number], // 单页宽高：960 * 720
-      orientation: 'landscape' as const // 页面方向：纵向（portrait），横向（landscape）
-    }
-  }
-  if (element) {
-    html2pdf().from(element).set(options).save()
-  }
+const planPreviewerRef = ref<InstanceType<typeof PlanPreviewer> | null>(null)
+
+function onExportPDF() {
+  planPreviewerRef.value?.exportPDF()
 }
 </script>
 
