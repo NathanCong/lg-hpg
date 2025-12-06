@@ -22,7 +22,7 @@
         </span>
       </div>
       <div class="page-plans">
-        <template v-for="(month, index) in months" :key="index">
+        <template v-for="month in months" :key="month">
           <PlanDetail
             :year="year"
             :month="month"
