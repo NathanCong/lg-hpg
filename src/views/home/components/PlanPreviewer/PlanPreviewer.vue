@@ -1,10 +1,12 @@
 <template>
   <div class="plan-previewer" :class="{ empty: isEmpty }">
     <template v-if="isEmpty">
-      <CommonEmpty />
+      <section class="previewer-empty">
+        <CommonEmpty />
+      </section>
     </template>
     <template v-else>
-      <div class="previewer-pages" ref="previewerPagesRef">
+      <section class="previewer-pages" ref="previewerPagesRef">
         <template v-for="page in planPages" :key="page.key">
           <PlanPage
             :year="userOptions.year"
@@ -15,7 +17,7 @@
             :color3="userOptions.color3"
           />
         </template>
-      </div>
+      </section>
     </template>
   </div>
 </template>
@@ -81,15 +83,24 @@ defineExpose({
 <style lang="less" scoped>
 .plan-previewer {
   width: 100%;
+  min-width: calc(960px + 16px + 16px);
   height: auto;
   box-sizing: border-box;
   padding: 16px 0;
-  background-color: #e8e8e8;
+  background-color: #ccc;
   display: flex;
   justify-content: center;
+  align-items: center;
 
   &.empty {
+    min-width: none;
     height: 100%;
+  }
+
+  .previewer-empty {
+    width: 96%;
+    height: 96%;
+    background-color: rgba(255, 255, 255, 0.9);
   }
 }
 </style>

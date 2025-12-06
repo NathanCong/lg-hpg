@@ -78,7 +78,7 @@ const isFullMode = computed(() => props.mode === 'full')
         right: 0;
         bottom: 16px;
         left: 0;
-        overflow-y: auto;
+        overflow: auto;
       }
     }
   }

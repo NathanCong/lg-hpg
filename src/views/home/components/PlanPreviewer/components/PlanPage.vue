@@ -22,7 +22,7 @@
         </span>
       </div>
       <div class="page-plans">
-        <template v-for="month in months" :key="month">
+        <template v-for="(month, index) in months" :key="index">
           <PlanDetail
             :year="year"
             :month="month"
@@ -55,12 +55,12 @@ const props = withDefaults(
     color3?: string
   }>(),
   {
-    year: 'year',
-    months: () => ['1', '2', '3', '4'],
+    year: '',
+    months: () => [],
     yearPlan: () => ({}),
-    color1: '#FF0000',
-    color2: '#00FF00',
-    color3: '#0000FF'
+    color1: '',
+    color2: '',
+    color3: ''
   }
 )
 

@@ -1,9 +1,17 @@
 /**
  * 是否法定节假日
+ * @param dateType 日期类型（0: 工作日，1: 周末，2: 节日，3: 调休）
  * @param dateName 日期名称
  * @param date     日期
  */
-export function isLegalHoliday(dateName: string, date: string): boolean {
+export function isLegalHoliday(
+  dateType: number,
+  dateName: string,
+  date: string
+): boolean {
+  if (dateType !== 2) {
+    return false
+  }
   // 元旦 -	法定日期: 1 月 1 日
   if (date.includes('01-01')) {
     return true
@@ -53,7 +61,7 @@ export function getWageMultiple(
   // 假期 2 倍薪资起
   if (dateType === 2) {
     // 法定节假日 3 倍薪资
-    if (isLegalHoliday(dateName, date)) {
+    if (isLegalHoliday(dateType, dateName, date)) {
       return 3
     }
     // 其他情况 2 倍薪资

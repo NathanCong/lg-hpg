@@ -126,6 +126,12 @@ const tbodyCells = computed<TbodyCell[]>(() => {
   cells.push(...aFillCells)
   return cells
 })
+
+const totalRowCount = computed(() => {
+  const totalCellsCount = theadCells.value.length + tbodyCells.value.length
+  return Math.ceil(totalCellsCount / 7)
+})
+console.log('totalRowCount', totalRowCount.value)
 </script>
 
 <style lang="less" scoped>
@@ -153,9 +159,10 @@ const tbodyCells = computed<TbodyCell[]>(() => {
     flex: 1;
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    grid-template-rows: repeat(7, 1fr);
+    grid-template-rows: auto;
+    grid-auto-rows: minmax(31px, auto);
     gap: 2px;
-    background-color: #eee;
+    background-color: #ddd;
 
     .thead-cell,
     .tbody-cell {

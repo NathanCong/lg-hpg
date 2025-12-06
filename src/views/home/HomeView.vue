@@ -51,16 +51,13 @@ async function getHolidayPlanFromYear(year: string) {
       if (!holidayPlan[month]) {
         holidayPlan[month] = {}
       }
-      const { date } = holiday[key]
+      const { date, wage } = holiday[key]
       const { type, name, week } = dateDetail[date]
-      // 设置 date、type、desc、week
-      holidayPlan[month][day].date = date
-      holidayPlan[month][day].type = type
-      holidayPlan[month][day].desc = name
-      holidayPlan[month][day].week = week
+      // 初始化
+      holidayPlan[month][day] = { date, type, name, desc: name, week, wage }
       // 设置 name
       let newName = ''
-      if (isLegalHoliday(name, date) && !holidays.includes(name)) {
+      if (isLegalHoliday(type, name, date) && !holidays.includes(name)) {
         // 法定节假日，不重复显示
         newName = name
         holidays.push(newName)
@@ -86,9 +83,10 @@ const userOptions = reactive<UserOptions>({
 
 const holidayYearPlan = ref<HolidayYearPlan>({})
 
-async function onCreate(userOptions: UserOptions) {
-  const { year, color1, color2, color3 } = userOptions
+async function onCreate({ year, color1, color2, color3 }: UserOptions) {
   try {
+    // 请求新数据之前必须先清空，否则样式会错乱
+    holidayYearPlan.value = {}
     holidayYearPlan.value = (await getHolidayPlanFromYear(year)) || {}
     userOptions.year = year
     userOptions.color1 = color1
