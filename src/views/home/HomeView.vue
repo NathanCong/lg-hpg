@@ -18,10 +18,19 @@
           <div class="preview-footer">
             <a-button
               type="primary"
+              style="margin-left: 8px"
+              :disabled="isExportDisabled"
+              @click="onExportPNG"
+            >
+              导出 PNG
+            </a-button>
+            <a-button
+              type="primary"
+              style="margin-left: 8px"
               :disabled="isExportDisabled"
               @click="onExportPDF"
             >
-              导出PDF
+              导出 PDF
             </a-button>
           </div>
         </template>
@@ -102,6 +111,10 @@ const isEmpty = computed(() => Object.keys(holidayYearPlan.value).length < 1)
 const isExportDisabled = computed(() => requestLoading.value || isEmpty.value)
 
 const planPreviewerRef = ref<InstanceType<typeof PlanPreviewer> | null>(null)
+
+function onExportPNG() {
+  planPreviewerRef.value?.exportPNG()
+}
 
 function onExportPDF() {
   planPreviewerRef.value?.exportPDF()

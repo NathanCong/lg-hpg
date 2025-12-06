@@ -6,7 +6,7 @@
       </section>
     </template>
     <template v-else>
-      <section class="previewer-pages" ref="previewerPagesRef">
+      <section class="previewer-content" ref="previewerContentRef">
         <template v-for="page in planPages" :key="page.key">
           <PlanPage
             :year="userOptions.year"
@@ -15,6 +15,7 @@
             :color1="userOptions.color1"
             :color2="userOptions.color2"
             :color3="userOptions.color3"
+            ref="previewerPagesRef"
           />
         </template>
       </section>
@@ -25,6 +26,7 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import html2pdf from 'html2pdf.js'
+import html2canvas from 'html2canvas'
 import { CommonEmpty } from '@/components/index'
 import PlanPage from './components/PlanPage.vue'
 
@@ -48,7 +50,7 @@ const planPages = computed(() => {
   return pages
 })
 
-const previewerPagesRef = ref<HTMLElement | null>(null)
+const previewerContentRef = ref<HTMLElement | null>(null)
 
 function exportPDF() {
   const { year } = props.userOptions
@@ -69,14 +71,41 @@ function exportPDF() {
       orientation: 'landscape' as const // 页面方向：纵向（portrait），横向（landscape）
     }
   }
-  const element = previewerPagesRef.value
+  const element = previewerContentRef.value
   if (element) {
     html2pdf().from(element).set(exportOptions).save()
   }
 }
 
+const previewerPagesRef = ref<InstanceType<typeof PlanPage>[] | null>(null)
+
+function exportPNG() {
+  if (previewerPagesRef.value) {
+    previewerPagesRef.value.forEach((page) => {
+      console.log('page', page.$el)
+      html2canvas(page.$el, {
+        useCORS: true, // 允许跨域图片（关键！否则跨域图片会空白）
+        scale: 2 // 放大2倍，提升导出图片清晰度
+      })
+        .then((canvas) => {
+          // 将Canvas转换为图片URL
+          const imgUrl = canvas.toDataURL('image/png') // 格式可选image/png或image/jpeg
+          // 创建下载链接并触发下载
+          const link = document.createElement('a')
+          link.href = imgUrl
+          link.download = `导出图片_${new Date().getTime()}.png` // 自定义文件名
+          link.click()
+          // 释放内存（可选）
+          URL.revokeObjectURL(imgUrl)
+        })
+        .catch((err) => console.log(err))
+    })
+  }
+}
+
 defineExpose({
-  exportPDF
+  exportPDF,
+  exportPNG
 })
 </script>
 
@@ -95,11 +124,12 @@ defineExpose({
   &.empty {
     min-width: none;
     height: 100%;
+    padding: 16px;
   }
 
   .previewer-empty {
-    width: 96%;
-    height: 96%;
+    width: 100%;
+    height: 100%;
     background-color: rgba(255, 255, 255, 0.9);
   }
 }
