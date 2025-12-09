@@ -99,11 +99,11 @@ function getPlanDesc(
   const hCount = holidayDates.length // 假期天数
   const planDescs: string[] = []
   if (hCount === 1) {
-    planDescs.push(`${holidayName}: ${sHDateName} (${sHWeekName})，共1天`)
+    planDescs.push(`${holidayName}: ${sHDateName} (${sHWeekName}) 休假，共1天`)
   }
   if (hCount > 1) {
     planDescs.push(
-      `${holidayName}: ${sHDateName} (${sHWeekName}) ~ ${eHDateName} (${eHWeekName})，共${hCount}天`
+      `${holidayName}: ${sHDateName} (${sHWeekName}) ~ ${eHDateName} (${eHWeekName}) 休假，共${hCount}天`
     )
   }
   if (workdayDates.length > 0) {
@@ -151,7 +151,7 @@ function getPlanMaps(
       planDatesMap[date] = {
         date,
         type: 2,
-        name: '',
+        name: '补班',
         week: week === 0 ? 7 : week,
         wage: 1
       }
