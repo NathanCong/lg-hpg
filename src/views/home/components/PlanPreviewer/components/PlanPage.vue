@@ -1,7 +1,7 @@
 <template>
   <div class="plan-page">
     <section class="page-header">
-      {{ year }} 年 LG CNS 根据国家规定的节假日放假计划
+      {{ userOptions.year }} 年 LG CNS 根据国家规定的节假日放假计划
     </section>
     <section class="page-mainer">
       <div class="page-tips">
@@ -22,53 +22,48 @@
         </span>
       </div>
       <div class="page-plans">
-        <template v-for="month in months" :key="month">
-          <PlanDetail
-            :year="year"
-            :month="month"
-            :month-plan="yearPlan[month]"
-            :color1="color1"
-            :color2="color2"
-            :color3="color3"
-          />
+        <template v-for="plan in monthHolidayPlans" :key="plan.month">
+          <PlanDetail :user-options="userOptions" :month-holiday-plan="plan" />
         </template>
       </div>
     </section>
     <section class="page-footer">
-      <img class="page-logo" :src="LogoPNG" />
+      <img class="page-logo" :src="imgSrc" />
     </section>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import LogoPNG from '@/assets/images/logo.png'
 import PlanDetail from './PlanDetail.vue'
 
 const props = withDefaults(
   defineProps<{
-    year?: string
-    yearPlan?: HolidayYearPlan
-    months?: string[]
-    color1?: string
-    color2?: string
-    color3?: string
+    userOptions: UserOptions
+    monthHolidayPlans: MonthHolidayPlan[]
   }>(),
   {
-    year: '',
-    months: () => [],
-    yearPlan: () => ({}),
-    color1: '',
-    color2: '',
-    color3: ''
+    userOptions: () => ({
+      year: '',
+      color1: '',
+      color2: '',
+      color3: ''
+    }),
+    monthHolidayPlans: () => []
   }
 )
 
-const colors = computed(() => [
-  { color: props.color1, label: '放假（法定节假日）' },
-  { color: props.color2, label: '放假（调休、补休、周末连休）' },
-  { color: props.color3, label: '上班（补班）' }
-])
+const colors = computed(() => {
+  const { color1, color2, color3 } = props.userOptions
+  return [
+    { color: color1, label: '放假（法定节假日）' },
+    { color: color2, label: '放假（调休、补休、周末连休）' },
+    { color: color3, label: '上班（补班）' }
+  ]
+})
+
+const imgSrc = ref(LogoPNG)
 </script>
 
 <style lang="less" scoped>

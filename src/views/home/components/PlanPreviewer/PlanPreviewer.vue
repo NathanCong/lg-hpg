@@ -9,12 +9,8 @@
       <section class="previewer-content" ref="previewerContentRef">
         <template v-for="page in planPages" :key="page.key">
           <PlanPage
-            :year="userOptions.year"
-            :year-plan="holidayYearPlan"
-            :months="page.months"
-            :color1="userOptions.color1"
-            :color2="userOptions.color2"
-            :color3="userOptions.color3"
+            :user-options="userOptions"
+            :month-holiday-plans="page.monthHolidayPlans"
             ref="previewerPagesRef"
           />
         </template>
@@ -27,24 +23,35 @@
 import { computed, ref } from 'vue'
 import html2pdf from 'html2pdf.js'
 import html2canvas from 'html2canvas'
+import dayjs from 'dayjs'
 import { CommonEmpty } from '@/components/index'
 import PlanPage from './components/PlanPage.vue'
 
 const props = withDefaults(
-  defineProps<{ userOptions: UserOptions; holidayYearPlan: HolidayYearPlan }>(),
-  {}
+  defineProps<{
+    userOptions: UserOptions
+    monthHolidayPlans: MonthHolidayPlan[]
+  }>(),
+  {
+    userOptions: () => ({
+      year: '',
+      color1: '',
+      color2: '',
+      color3: ''
+    }),
+    monthHolidayPlans: () => []
+  }
 )
 
-const planMonths = computed(() => Object.keys(props.holidayYearPlan).sort())
-
-const isEmpty = computed(() => planMonths.value.length < 1)
+const isEmpty = computed(() => props.monthHolidayPlans.length < 1)
 
 const planPages = computed(() => {
   const pages = []
-  for (let i = 0; i < planMonths.value.length; i += 4) {
+  const { monthHolidayPlans } = props
+  for (let i = 0; i < monthHolidayPlans.length; i += 4) {
     pages.push({
       key: i,
-      months: planMonths.value.slice(i, i + 4)
+      monthHolidayPlans: monthHolidayPlans.slice(i, i + 4)
     })
   }
   return pages
@@ -52,11 +59,16 @@ const planPages = computed(() => {
 
 const previewerContentRef = ref<HTMLElement | null>(null)
 
-function exportPDF() {
+function getExportFileName(fileType: 'pdf' | 'png') {
   const { year } = props.userOptions
+  const timestamp = dayjs().valueOf()
+  return `${year}年节假日放假计划_${timestamp}.${fileType}`
+}
+
+function exportPDF() {
   const exportOptions = {
     margin: 0,
-    filename: `${year}年节假日放假计划.pdf`,
+    filename: getExportFileName('pdf'),
     image: {
       type: 'jpeg' as const,
       quality: 0.98
@@ -88,11 +100,11 @@ function exportPNG() {
       })
         .then((canvas) => {
           // 将Canvas转换为图片URL
-          const imgUrl = canvas.toDataURL('image/png') // 格式可选image/png或image/jpeg
+          const imgUrl = canvas.toDataURL('image/png')
           // 创建下载链接并触发下载
           const link = document.createElement('a')
           link.href = imgUrl
-          link.download = `导出图片_${new Date().getTime()}.png` // 自定义文件名
+          link.download = getExportFileName('png')
           link.click()
           // 释放内存（可选）
           URL.revokeObjectURL(imgUrl)

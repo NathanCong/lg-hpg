@@ -1,8 +1,8 @@
 <template>
   <div class="plan-detail">
     <section class="detail-header">
-      <span class="header-month">{{ month }}月</span>
-      <span class="header-desc"></span>
+      <span class="header-month">{{ monthHolidayPlan.month }}月</span>
+      <span class="header-desc">{{ monthHolidayPlan.planDesc }}</span>
     </section>
     <section class="detail-table">
       <!-- thead -->
@@ -31,20 +31,21 @@ import dayjs from 'dayjs'
 
 const props = withDefaults(
   defineProps<{
-    year?: string
-    month?: string
-    monthPlan?: HolidayMonthPlan
-    color1?: string
-    color2?: string
-    color3?: string
+    userOptions: UserOptions
+    monthHolidayPlan: MonthHolidayPlan
   }>(),
   {
-    year: '',
-    month: '',
-    monthPlan: () => ({}),
-    color1: '',
-    color2: '',
-    color3: ''
+    userOptions: () => ({
+      year: '',
+      color1: '',
+      color2: '',
+      color3: ''
+    }),
+    monthHolidayPlan: () => ({
+      month: '',
+      planDesc: '',
+      planDays: []
+    })
   }
 )
 
@@ -64,43 +65,49 @@ const theadCells = computed<TheadCell[]>(() => {
   })
 })
 
-function getTbodyCellBgColor(type: number, wage: number) {
-  // Type 3 代表补班，使用 color3
-  if (type === 3) {
-    return props.color3
+function getTbodyCellBgColor(wage?: number, type?: number) {
+  const { color1, color2, color3 } = props.userOptions
+  // 法定节假日，3倍薪资，使用 color1
+  if (wage === 3) {
+    return color1
   }
-  // Type 2 代表假期
+  // 假期，2倍薪资，使用 color2
+  if (wage === 2) {
+    return color2
+  }
+  // 补班，1倍薪资，使用 color3
   if (type === 2) {
-    // wage 3 代表3倍薪资，使用 color1
-    if (wage === 3) {
-      return props.color1
-    }
-    // wage 2 代表2倍薪资，使用 color2
-    if (wage === 2) {
-      return props.color2
-    }
+    return color3
   }
+  // 其他，使用默认背景色
   return '#fafafa'
+}
+
+function isWeekend(week: number) {
+  return week === 0 || week === 6
 }
 
 const tbodyCells = computed<TbodyCell[]>(() => {
   const cells: TbodyCell[] = []
-  const { year, month, monthPlan } = props
+  const { userOptions, monthHolidayPlan } = props
+  const { year } = userOptions
+  const { month, planDays } = monthHolidayPlan
   const firstDay = dayjs(`${year}-${month}-01`)
   const daysCount = firstDay.daysInMonth()
   // 填充日期
   for (let i = 1; i <= daysCount; i += 1) {
     const week = firstDay.date(i).day()
-    const key = String(i).length > 1 ? `${i}` : `0${i}`
-    const { type, name, wage } = monthPlan[key] || {}
+    const date = firstDay.date(i).format('YYYY-MM-DD')
+    const planDay = planDays.find((item) => item.date === date)
+    const { name, type, wage } = planDay || {}
     cells.push({
       key: i,
       text: String(i),
       className: 'tbody-cell',
       week: week === 0 ? 7 : week,
-      desc: name,
-      bgColor: getTbodyCellBgColor(type, wage),
-      textColor: week === 0 || week === 6 ? 'red' : '#333'
+      desc: name || '',
+      bgColor: getTbodyCellBgColor(wage, type),
+      textColor: isWeekend(week) ? 'red' : '#333'
     })
   }
   // 填充头部空白
@@ -143,9 +150,16 @@ const tbodyCells = computed<TbodyCell[]>(() => {
     margin-bottom: 8px;
 
     .header-month {
+      width: auto;
       color: #b9000d;
-      font-size: 16px;
+      font-size: 20px;
+      line-height: 20px;
       font-weight: bold;
+      margin-right: 4px;
+    }
+
+    .header-desc {
+      flex: 1;
     }
   }
 

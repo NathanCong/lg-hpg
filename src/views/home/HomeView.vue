@@ -10,7 +10,7 @@
         <CommonLoading :is-loading="requestLoading">
           <PlanPreviewer
             :user-options="userOptions"
-            :holiday-year-plan="holidayYearPlan"
+            :month-holiday-plans="monthHolidayPlans"
             ref="planPreviewerRef"
           />
         </CommonLoading>
@@ -43,39 +43,196 @@
 import { reactive, ref, computed } from 'vue'
 import { CommonCard, CommonLoading } from '@/components/index'
 import { OptionsSelector, PlanPreviewer } from './components/index'
-import { getHolidaysFromYear } from '@/apis'
-import { isLegalHoliday, getWageMultiple } from '@/utils/common'
+import { getHolidaysFromYear, getHolidaysFromDates } from '@/apis'
+import dayjs from 'dayjs'
+import { getHolidayNameAndMultiple } from '@/utils/common'
 
 const requestLoading = ref(false)
 
-async function getHolidayPlanFromYear(year: string) {
+/**
+ * 获取星期名称
+ */
+function getWeekName(date: string) {
+  const week = dayjs(date).day()
+  return `星期${['日', '一', '二', '三', '四', '五', '六'][week]}`
+}
+
+/**
+ * 获取中秋节日期
+ */
+function getMoonFestivalDate(dates: string[]): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (dates.length < 1) {
+      resolve('')
+      return
+    }
+    getHolidaysFromDates(dates)
+      .then((response) => {
+        const { holiday } = response.data
+        let moonFestivalDate = ''
+        Object.keys(holiday).forEach((date: string) => {
+          const { name } = holiday[date]
+          if (name.includes('中秋')) {
+            moonFestivalDate = date
+          }
+        })
+        resolve(moonFestivalDate)
+      })
+      .catch((error) => reject(error))
+  })
+}
+
+/**
+ * 获取假期安排描述
+ */
+function getPlanDesc(
+  holidayName: string,
+  holidayDates: string[],
+  workdayDates: string[]
+) {
+  const sHDate = holidayDates[0] // 假期开始日期
+  const sHDateName = dayjs(sHDate).format('MM月DD日')
+  const sHWeekName = getWeekName(sHDate) // 假期开始周
+  const eHDate = holidayDates[holidayDates.length - 1] // 假期结束日期
+  const eHDateName = dayjs(eHDate).format('MM月DD日')
+  const eHWeekName = getWeekName(eHDate) // 假期结束周
+  const hCount = holidayDates.length // 假期天数
+  const planDescs: string[] = []
+  if (hCount === 1) {
+    planDescs.push(`${holidayName}: ${sHDateName} (${sHWeekName})，共1天`)
+  }
+  if (hCount > 1) {
+    planDescs.push(
+      `${holidayName}: ${sHDateName} (${sHWeekName}) ~ ${eHDateName} (${eHWeekName})，共${hCount}天`
+    )
+  }
+  if (workdayDates.length > 0) {
+    const workdayNames = workdayDates.map(
+      (date) => `${dayjs(date).format('MM月DD日')} (${getWeekName(date)})`
+    )
+    planDescs.push(`${workdayNames.join('，')} 上班`)
+  }
+  return planDescs.join('；')
+}
+
+/**
+ * 获取 planDescsMap 和 planDatesMap
+ */
+function getPlanMaps(
+  holidayNamesMap: HolidayNamesMap,
+  moonFestivalDate: string
+) {
+  const planDescsMap: Record<string, string> = {}
+  const planDatesMap: Record<string, PlanDay> = {}
+  Object.keys(holidayNamesMap).forEach((name) => {
+    // 生成 planDescsMap
+    const { holidayDates, workdayDates } = holidayNamesMap[name]
+    const month = holidayDates[holidayDates.length - 1].split('-')[1]
+    planDescsMap[month] = getPlanDesc(name, holidayDates, workdayDates)
+    // 生成 planDatesMap
+    holidayDates.forEach((date, index) => {
+      const { holidayName, wage } = getHolidayNameAndMultiple(
+        name,
+        date,
+        index,
+        moonFestivalDate
+      )
+      const week = dayjs(date).day()
+      planDatesMap[date] = {
+        date,
+        type: 1,
+        name: holidayName,
+        week: week === 0 ? 7 : week,
+        wage
+      }
+    })
+    workdayDates.forEach((date) => {
+      const week = dayjs(date).day()
+      planDatesMap[date] = {
+        date,
+        type: 2,
+        name: '',
+        week: week === 0 ? 7 : week,
+        wage: 1
+      }
+    })
+  })
+  return { planDescsMap, planDatesMap }
+}
+
+/**
+ * 获取 monthHolidayPlans
+ */
+async function getMonthHolidayPlans(year: string) {
   requestLoading.value = true
   try {
     const response = await getHolidaysFromYear(year)
-    const { holiday, type: dateDetail } = response.data
-    const holidayPlan: HolidayYearPlan = {}
-    const holidays: string[] = []
-    Object.keys(holiday).forEach((key) => {
-      const [month, day] = key.split('-')
-      if (!holidayPlan[month]) {
-        holidayPlan[month] = {}
+    const { days } = response.data
+    const holidayNamesMap: HolidayNamesMap = {}
+    const holidayMonthsMap: HolidayMonthsMap = {}
+    const searchDates: string[] = []
+    days.forEach((day: { name: string; date: string; isOffDay: boolean }) => {
+      const { name, date, isOffDay } = day
+      // 生成 holidayNamesMap
+      if (!holidayNamesMap[name]) {
+        holidayNamesMap[name] = { holidayDates: [], workdayDates: [] }
       }
-      const { date, wage } = holiday[key]
-      const { type, name, week } = dateDetail[date]
-      // 初始化
-      holidayPlan[month][day] = { date, type, name, desc: name, week, wage }
-      // 设置 name
-      let newName = ''
-      if (isLegalHoliday(type, name, date) && !holidays.includes(name)) {
-        // 法定节假日，不重复显示
-        newName = name
-        holidays.push(newName)
+      if (isOffDay) {
+        holidayNamesMap[name].holidayDates.push(date)
+      } else {
+        holidayNamesMap[name].workdayDates.push(date)
       }
-      holidayPlan[month][day].name = newName
-      // 设置 wage
-      holidayPlan[month][day].wage = getWageMultiple(type, newName, date)
+      // 生成 holidayMonthsMap
+      const month = date.split('-')[1]
+      if (!holidayMonthsMap[month]) {
+        holidayMonthsMap[month] = { planDayDates: [] }
+      }
+      holidayMonthsMap[month].planDayDates.push(date)
+      // 生成 searchDates
+      if (name.includes('国庆') && name.includes('中秋')) {
+        searchDates.push(date)
+      }
     })
-    return holidayPlan
+    const moonFestivalDate = await getMoonFestivalDate(searchDates)
+    const { planDescsMap, planDatesMap } = getPlanMaps(
+      holidayNamesMap,
+      moonFestivalDate
+    )
+    // 生成 monthHolidayPlans
+    const monthHolidayPlans: MonthHolidayPlan[] = []
+    Object.keys(holidayMonthsMap).forEach((month) => {
+      let planDesc = planDescsMap[month]
+      if (!planDesc) {
+        const holidayNames: string[] = []
+        const holidayDates: string[] = []
+        const workdayDates: string[] = []
+        holidayMonthsMap[month].planDayDates.forEach((d) => {
+          const { date, name, type } = planDatesMap[d]
+          if (name) {
+            holidayNames.push(name)
+          }
+          if (type === 1) {
+            holidayDates.push(date)
+          }
+          if (type === 2) {
+            workdayDates.push(date)
+          }
+        })
+        const holidayName = holidayNames.join('、')
+        planDesc = getPlanDesc(holidayName, holidayDates, workdayDates)
+      }
+      monthHolidayPlans.push({
+        month,
+        planDesc,
+        planDays: holidayMonthsMap[month].planDayDates.map(
+          (date) => planDatesMap[date]
+        )
+      })
+    })
+    return monthHolidayPlans.sort(
+      (a: MonthHolidayPlan, b: MonthHolidayPlan) =>
+        Number(a.month) - Number(b.month)
+    )
   } catch (error) {
     console.error(error)
   } finally {
@@ -90,13 +247,13 @@ const userOptions = reactive<UserOptions>({
   color3: ''
 })
 
-const holidayYearPlan = ref<HolidayYearPlan>({})
+const monthHolidayPlans = ref<MonthHolidayPlan[]>([])
 
 async function onCreate({ year, color1, color2, color3 }: UserOptions) {
   try {
     // 请求新数据之前必须先清空，否则样式会错乱
-    holidayYearPlan.value = {}
-    holidayYearPlan.value = (await getHolidayPlanFromYear(year)) || {}
+    monthHolidayPlans.value = []
+    monthHolidayPlans.value = (await getMonthHolidayPlans(year)) || []
     userOptions.year = year
     userOptions.color1 = color1
     userOptions.color2 = color2
@@ -106,7 +263,7 @@ async function onCreate({ year, color1, color2, color3 }: UserOptions) {
   }
 }
 
-const isEmpty = computed(() => Object.keys(holidayYearPlan.value).length < 1)
+const isEmpty = computed(() => monthHolidayPlans.value.length < 1)
 
 const isExportDisabled = computed(() => requestLoading.value || isEmpty.value)
 
